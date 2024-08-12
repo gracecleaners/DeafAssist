@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1015216355326",
+    "project_id": "reachall-f6f24",
+    "storage_bucket": "reachall-f6f24.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015216355326:android:51af6e46b8aafce06bf2af",
+        "android_client_info": {
+          "package_name": "com.example.deafassist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8lbALmHOj8eLpzt5NBYdzBNr3WtM7yuc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015216355326:android:be0b24225e0cf9e56bf2af",
+        "android_client_info": {
+          "package_name": "com.example.deafassist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8lbALmHOj8eLpzt5NBYdzBNr3WtM7yuc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
