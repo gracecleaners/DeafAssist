@@ -5,6 +5,7 @@ class MyText extends StatelessWidget {
   final double fontSize;
   final Color color;
   final FontWeight fontWeight;
+  final FontStyle fontStyle;
   final TextAlign textAlign;
   final int maxLines;
   final TextOverflow overflow;
@@ -15,6 +16,7 @@ class MyText extends StatelessWidget {
     this.fontSize = 16.0,
     this.color = Colors.black,
     this.fontWeight = FontWeight.normal,
+    this.fontStyle = FontStyle.normal,
     this.textAlign = TextAlign.start,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
@@ -28,6 +30,7 @@ class MyText extends StatelessWidget {
         fontSize: fontSize,
         color: color,
         fontWeight: fontWeight,
+        fontStyle: fontStyle
       ),
       textAlign: textAlign,
       maxLines: maxLines,

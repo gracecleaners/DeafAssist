@@ -1,4 +1,5 @@
 import 'package:deafassist/views/screens/deaf/bottomNavDeaf.dart';
+import 'package:deafassist/views/screens/interpreter/fill_info.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
@@ -32,7 +33,7 @@ class LoginController {
           if (documentSnapshot.get('role') == "deaf") {
             NavigationUtils.navigateTo(context, BottomNavDeaf());
           } else {
-            NavigationUtils.navigateTo(context, Trial());
+            NavigationUtils.navigateTo(context, AddInterpreterPage());
           }
         } else {
           print('Document does not exist on the database');

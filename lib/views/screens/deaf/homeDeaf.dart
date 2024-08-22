@@ -1,5 +1,11 @@
+import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/modals/category.dart';
+import 'package:deafassist/services/auth_service.dart';
+import 'package:deafassist/views/screens/auth/loginpage.dart';
 import 'package:deafassist/views/screens/deaf/chatDeaf.dart';
+import 'package:deafassist/views/screens/deaf/resource_main.dart';
+import 'package:deafassist/views/screens/deaf/view_interpreters.dart';
+import 'package:deafassist/views/screens/trial.dart';
 import 'package:deafassist/views/widgets/circleButton.dart';
 import 'package:deafassist/views/widgets/search.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +20,7 @@ class HomeDeaf extends StatefulWidget {
 }
 
 class _HomeDeafState extends State<HomeDeaf> {
+   // Initialize your AuthService
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -21,7 +28,7 @@ class _HomeDeafState extends State<HomeDeaf> {
       child: Scaffold(
         body: SingleChildScrollView(
           child: Column(
-            children: const [
+            children: [
               AppBar(),
               Body(),
             ],
@@ -37,6 +44,59 @@ class Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    List<Category> categoryList = [
+  Category(
+    name: 'Interpreters',
+    thumbnail: 'assets/images/logo.png',
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ViewInterpreters(),
+        ),
+      );
+    },
+  ),
+  Category(
+    name: 'Resources',
+    thumbnail: 'assets/images/logo.png',
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Resources(),
+        ),
+      );
+    },
+  ),
+  Category(
+    name: 'Photography',
+    thumbnail: 'assets/images/logo.png',
+    onTap: () {
+     Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ViewInterpreters(),
+        ),
+      );
+    },
+  ),
+  Category(
+    name: 'Product Design',
+    thumbnail: 'assets/images/logo.png',
+    onTap: () {
+     Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ViewInterpreters(),
+        ),
+      );
+    },
+  ),
+];
+
+
     return Column(
       children: [
         Padding(
@@ -46,7 +106,7 @@ class Body extends StatelessWidget {
             children: [
               Text("Deaf Assist", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),),
               const SizedBox(height: 8.0,),
-              Text("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ips um has been the ndustry's standard dummy"),
+              Text("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text."),
             ],
           )
         ),
@@ -84,12 +144,7 @@ class CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const ChatDeaf(),
-        ),
-      ),
+      onTap: () => category.onTap(), // Ensuring `onTap` executes
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -100,7 +155,7 @@ class CategoryCard extends StatelessWidget {
               color: Colors.black.withOpacity(.1),
               blurRadius: 4.0,
               spreadRadius: .05,
-            ), //BoxShadow
+            ),
           ],
         ),
         child: Column(
@@ -119,13 +174,6 @@ class CategoryCard extends StatelessWidget {
             Align(
               alignment: Alignment.center,
               child: Text(category.name)),
-            Align( 
-              alignment: Alignment.center,
-              child: Text(
-                "${category.noOfCourses.toString()} courses",
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
           ],
         ),
       ),
@@ -133,8 +181,10 @@ class CategoryCard extends StatelessWidget {
   }
 }
 
+
 class AppBar extends StatelessWidget {
-  const AppBar({
+  final AuthService _authService = AuthService();
+  AppBar({
     Key? key,
   }) : super(key: key);
 
@@ -173,9 +223,15 @@ class AppBar extends StatelessWidget {
                   fontSize: 30
                 )
               ),
-              CircleButton(
-                icon: Icons.notifications,
-                onPressed: () {},
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.backgroundColor
+                ),
+                icon: Icon(Icons.logout, color: AppColors.primaryColor,),
+                onPressed: () async {
+                  await _authService.signOut();
+                Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                },
               ),
             ],
           ),

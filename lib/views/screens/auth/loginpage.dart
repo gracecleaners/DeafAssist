@@ -38,6 +38,7 @@ class _LoginPageState extends State<LoginPage> {
           Padding(
             padding: const EdgeInsets.only(top: 180.0),
             child: Container(
+              height: MediaQuery.of(context).size.height,
               decoration: BoxDecoration(
                 color: AppColors.primaryColor,
                 borderRadius: BorderRadius.only(

@@ -46,4 +46,12 @@ class AuthService {
       throw Exception(e.message);
     }
   }
+
+   Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      throw Exception('Failed to sign out: $e');
+    }
+  }
 }

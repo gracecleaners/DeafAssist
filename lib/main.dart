@@ -1,7 +1,10 @@
 import 'package:deafassist/views/screens/auth/loginpage.dart';
 import 'package:deafassist/views/screens/auth/registerpage.dart';
 import 'package:deafassist/views/screens/deaf/bottomNavDeaf.dart';
+import 'package:deafassist/views/screens/deaf/homeDeaf.dart';
+import 'package:deafassist/views/screens/deaf/view_interpreter_details.dart';
 import 'package:deafassist/views/screens/deaf/view_interpreters.dart';
+import 'package:deafassist/views/screens/interpreter/fill_info.dart';
 import 'package:deafassist/views/screens/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -25,8 +28,8 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      // home: SplashScreen(),
-      home: ViewInterpreters(),
+      home: SplashScreen(),
+      // home: BottomNavDeaf(),
       // home: RegisterPage(),
     );
   }
