@@ -3,6 +3,8 @@ import 'package:deafassist/views/widgets/detail_image.dart';
 import 'package:deafassist/views/widgets/profile_detail.dart';
 import 'package:flutter/material.dart';
 
+import '../../../const/app_colors.dart';
+
 class DetailScreen extends StatelessWidget {
   const DetailScreen({super.key, required this.interpreter});
   final Interpreter interpreter;
@@ -32,7 +34,7 @@ class DetailScreen extends StatelessWidget {
                     child: const Icon(
                       Icons.arrow_back_ios,
                       size: 30,
-                      color: Colors.white,
+                      color: AppColors.primaryColor,
                     ),
                   ),
                 ],

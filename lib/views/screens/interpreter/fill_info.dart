@@ -2,8 +2,6 @@ import 'dart:io';
 import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/modals/interpreter_info.dart';
 import 'package:deafassist/services/interpreter_service.dart';
-import 'package:deafassist/views/screens/auth/loginpage.dart';
-import 'package:deafassist/views/screens/deaf/view_interpreters.dart';
 import 'package:deafassist/views/screens/trial.dart';
 import 'package:deafassist/views/widgets/text_field.dart';
 import 'package:deafassist/views/widgets/text_widget.dart';

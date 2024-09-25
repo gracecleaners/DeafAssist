@@ -1,4 +1,4 @@
-import 'package:deafassist/views/screens/deaf/bottomNavDeaf.dart';
+ import 'package:deafassist/views/screens/deaf/bottomNavDeaf.dart';
 import 'package:deafassist/views/screens/interpreter/fill_info.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
