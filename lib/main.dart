@@ -1,4 +1,5 @@
 import 'package:deafassist/views/screens/auth/loginpage.dart';
+import 'package:deafassist/views/screens/auth/loginsample.dart';
 import 'package:deafassist/views/screens/auth/registerpage.dart';
 import 'package:deafassist/views/screens/deaf/bottomNavDeaf.dart';
 import 'package:deafassist/views/screens/deaf/homeDeaf.dart';
@@ -29,8 +30,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // home: SplashScreen(),
-      home: BottomNavDeaf(),
+      // home: BottomNavDeaf(),
       // home: RegisterPage(),
+      home: LoginScreen(),
     );
   }
 }
