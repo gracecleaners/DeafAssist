@@ -26,6 +26,7 @@ class _HomeDeafState extends State<HomeDeaf> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
+        backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Column(
             children: [
@@ -60,7 +61,7 @@ class Body extends StatelessWidget {
   ),
   Category(
     name: 'Resources',
-    thumbnail: 'assets/images/logo.png',
+    thumbnail: 'assets/images/res.png',
     onTap: () {
       Navigator.push(
         context,
@@ -166,11 +167,11 @@ class CategoryCard extends StatelessWidget {
               alignment: Alignment.center,
               child: Image.asset(
                 category.thumbnail,
-                // height: 130,
+                height: 180,
               ),
             ),
             const SizedBox(
-              height: 10,
+              height: 8,
             ),
             Align(
               alignment: Alignment.center,

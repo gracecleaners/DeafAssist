@@ -51,7 +51,7 @@ class _BottomNavDeafState extends State<BottomNavDeaf> {
             BottomNavigationBarItem(
               activeIcon: Icon(Icons.person_2_outlined),
               icon: Icon(Icons.person_2),
-              label: "Profile",
+              label: "My Account",
             ),
           ],
           currentIndex: _selectedIndex,
