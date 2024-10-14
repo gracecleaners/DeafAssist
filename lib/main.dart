@@ -30,9 +30,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // home: SplashScreen(),
-      // home: BottomNavDeaf(),
+      home: BottomNavDeaf(),
       // home: RegisterPage(),
-      home: LoginScreen(),
+      // home: LoginScreen(),
     );
   }
 }

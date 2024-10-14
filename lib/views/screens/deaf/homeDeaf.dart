@@ -48,7 +48,7 @@ class Body extends StatelessWidget {
     List<Category> categoryList = [
   Category(
     name: 'Interpreters',
-    thumbnail: 'assets/images/logo.png',
+    thumbnail: 'assets/images/gath.png',
     onTap: () {
       Navigator.push(
         context,
@@ -104,9 +104,10 @@ class Body extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Deaf Assist", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),),
-              const SizedBox(height: 8.0,),
-              Text("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text."),
+              const SizedBox(height: 10.0,),
+              Text("Our Services", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),),
+              const SizedBox(height: 10.0,),
+             
             ],
           )
         ),
@@ -146,7 +147,7 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => category.onTap(), // Ensuring `onTap` executes
       child: Container(
-        padding: const EdgeInsets.all(10),
+        // padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -165,7 +166,7 @@ class CategoryCard extends StatelessWidget {
               alignment: Alignment.center,
               child: Image.asset(
                 category.thumbnail,
-                height: 130,
+                // height: 130,
               ),
             ),
             const SizedBox(
@@ -173,7 +174,7 @@ class CategoryCard extends StatelessWidget {
             ),
             Align(
               alignment: Alignment.center,
-              child: Text(category.name)),
+              child: Text(category.name, style: TextStyle(fontWeight: FontWeight.bold),)),
           ],
         ),
       ),

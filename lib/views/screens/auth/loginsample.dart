@@ -2,6 +2,7 @@ import 'package:deafassist/views/screens/auth/profilesample.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -9,61 +10,87 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-    Future<void> login(String email, String password) async {
-    final url = 'http://127.0.0.1:8000/account/api/login/';
+  Future<void> _login() async {
+    final email = _emailController.text;
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter both email and code')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Replace with your API URL
+    const String apiUrl = 'http://127.0.0.1:8000/account/api/login/';
+
     final response = await http.post(
-      Uri.parse(url),
-      body: json.encode({'email': email, 'password': password}),
+      Uri.parse(apiUrl),
       headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'password': password,
+      }),
     );
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final token = data['token'];
-      // Save token (optional) and navigate to homepage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePageTrial()), // Redirect to HomePage
-      );
-    } else {
-      final error = json.decode(response.body)['error'];
-      // Show error
+      final responseData = json.decode(response.body);
+      final token = responseData['token'];
+
+      // Save token using SharedPreferences for future requests
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', token);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
+        SnackBar(content: Text('Login successful!')),
+      );
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => HomePageTrial()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Login failed! Please check your email and code.')),
       );
     }
-  }
 
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
+      appBar: AppBar(title: Text('Interpreter Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
-              controller: emailController,
+              controller: _emailController,
               decoration: InputDecoration(labelText: 'Email'),
             ),
             TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(labelText: 'Password'),
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Code'),
+              obscureText: true, // Hide code
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                final email = emailController.text;
-                final password = passwordController.text;
-                login(email, password);
-              },
-              child: Text('Login'),
-            ),
+            _isLoading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: _login,
+                    child: Text('Login'),
+                  ),
           ],
         ),
       ),

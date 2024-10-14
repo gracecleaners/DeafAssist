@@ -6,6 +6,8 @@ class SearchTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final Color fillColor;
   final Color iconColor;
+  final TextEditingController? controller;  // Add controller parameter
+  final ValueChanged<String>? onChanged;  // Add onChanged callback
 
   const SearchTextField({
     Key? key,
@@ -14,11 +16,15 @@ class SearchTextField extends StatelessWidget {
     this.suffixIcon,
     this.fillColor = Colors.white,
     this.iconColor = Colors.grey,
+    this.controller,  // Initialize the controller
+    this.onChanged,  // Initialize the onChanged callback
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      controller: controller,  // Use the passed-in controller
+      onChanged: onChanged,  // Trigger onChanged callback when text changes
       decoration: InputDecoration(
         prefixIcon: Icon(
           Icons.search,
