@@ -16,15 +16,15 @@ class Trial extends StatelessWidget {
       body: Center(
         child: Column(
           children: [
-            MyText(text: "No Interpreter Data for Now, The app is still Under development. You will get interpreter data that you entered in deaf page", maxLines: 4,),
+            const MyText(text: "No Interpreter Data for Now, The app is still Under development. You will get interpreter data that you entered in deaf page", maxLines: 4,),
             IconButton(
               style: IconButton.styleFrom(
                 backgroundColor: AppColors.primaryColor
               ),
               onPressed: () async{
                  await _authService.signOut();
-                Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
-            }, icon: Icon(Icons.logout, color: Colors.white,))
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+            }, icon: const Icon(Icons.logout, color: Colors.white,))
           ],
         ),
       ),

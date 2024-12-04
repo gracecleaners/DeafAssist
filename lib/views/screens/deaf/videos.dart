@@ -16,9 +16,9 @@ class VideoLists extends StatelessWidget {
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
         ),
-        title: MyText(text: "Video Resources", fontSize: 22),
+        title: const MyText(text: "Video Resources", fontSize: 22),
         backgroundColor: AppColors.backgroundColor,
       ),
       body: Column(
@@ -26,10 +26,10 @@ class VideoLists extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: SearchTextField(
-              suffixIcon: Icon(Icons.send),
+              suffixIcon: const Icon(Icons.send),
               fillColor: const Color.fromARGB(255, 196, 195, 195).withOpacity(0.9),
               labelText: "Search for video by name",
-              labelStyle: TextStyle(color: AppColors.buttonColor),
+              labelStyle: const TextStyle(color: AppColors.buttonColor),
             ),
           ),
           Expanded(

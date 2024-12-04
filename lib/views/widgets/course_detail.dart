@@ -5,7 +5,7 @@ import 'dart:convert';
 class CourseDetailPage extends StatefulWidget {
   final int courseId;
 
-  CourseDetailPage({required this.courseId});
+  const CourseDetailPage({super.key, required this.courseId});
 
   @override
   _CourseDetailPageState createState() => _CourseDetailPageState();
@@ -42,26 +42,26 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: Icon(Icons.arrow_back)),
+            icon: const Icon(Icons.arrow_back)),
       ),
       body: courseDetail.isEmpty
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Description: ${courseDetail['description']}',
-                      style: TextStyle(fontSize: 18)),
-                  SizedBox(height: 10),
+                      style: const TextStyle(fontSize: 18)),
+                  const SizedBox(height: 10),
                   Text('Instructor: ${courseDetail['instructor']}',
-                      style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 10),
+                      style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 10),
                   Text('Start Date: ${courseDetail['start_date']}',
-                      style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 10),
+                      style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 10),
                   Text('End Date: ${courseDetail['end_date']}',
-                      style: TextStyle(fontSize: 16)),
+                      style: const TextStyle(fontSize: 16)),
                   // Add more course details here
                 ],
               ),

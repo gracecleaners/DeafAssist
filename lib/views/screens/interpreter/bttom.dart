@@ -1,22 +1,22 @@
 import 'package:deafassist/views/screens/auth/profilesample.dart';
-import 'package:deafassist/views/screens/deaf/homeDeaf.dart';
 import 'package:deafassist/views/screens/deaf/main_chat_list.dart';
+import 'package:deafassist/views/screens/interpreter/dashboard.dart';
 import 'package:flutter/material.dart';
 
-class BottomNavDeaf extends StatefulWidget {
-  const BottomNavDeaf({super.key});
+class BottomNavInterpreter extends StatefulWidget {
+  const BottomNavInterpreter({super.key});
 
   @override
-  _BottomNavDeafState createState() => _BottomNavDeafState();
+  _BottomNavInterpreterState createState() => _BottomNavInterpreterState();
 }
 
-class _BottomNavDeafState extends State<BottomNavDeaf> with SingleTickerProviderStateMixin {
+class _BottomNavInterpreterState extends State<BottomNavInterpreter> with SingleTickerProviderStateMixin {
   int _selectedIndex = 1; // Set initial page to the Chat page (index 1)
   late AnimationController _animationController;
 
   static List<Widget> _widgetOptions = <Widget>[
     ChatMainList(),
-    HomeDeaf(),
+    HomeInterpreter(),
     ProfileScreen(),
   ];
 

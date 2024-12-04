@@ -1,11 +1,9 @@
-import 'package:deafassist/const/app_colors.dart';
-import 'package:deafassist/modals/interpreter_info.dart';
 import 'package:deafassist/views/screens/deaf/view_interpreter_details.dart';
 import 'package:deafassist/views/widgets/text_widget.dart';
 import 'package:flutter/material.dart';
 
 class ViewInterpreterWidget extends StatelessWidget {
-  final Interpreter interpreter; // Add Interpreter parameter
+  final Map<String, dynamic> interpreter;
 
   const ViewInterpreterWidget({super.key, required this.interpreter});
 
@@ -15,14 +13,14 @@ class ViewInterpreterWidget extends StatelessWidget {
       children: [
         GestureDetector(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DetailScreen(
-                  interpreter: interpreter, // Pass the interpreter to DetailScreen
-                ),
-              ),
-            );
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (context) => DetailScreen(
+            //       interpreter: interpreter, // Pass entire interpreter data
+            //     ),
+            //   ),
+            // );
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -30,49 +28,53 @@ class ViewInterpreterWidget extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 35,
-                  backgroundImage: interpreter.profileImageUrl.isNotEmpty
-                      ? NetworkImage(interpreter.profileImageUrl) // Load image from URL
+                  backgroundImage: interpreter['profileImageUrl']?.isNotEmpty ?? false
+                      ? NetworkImage(interpreter['profileImageUrl'])
                       : null,
-                  child: interpreter.profileImageUrl.isEmpty
-                      ? Icon(Icons.person, size: 35) // Display default icon if no image
+                  child: interpreter['profileImageUrl']?.isEmpty ?? true
+                      ? const Icon(Icons.person, size: 35)
                       : null,
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     MyText(
-                        text: interpreter.fullName,
+                        text: interpreter['fullName'] ?? 'No name',
                         fontSize: 20,
                         fontWeight: FontWeight.bold),
                     MyText(
-                      text: interpreter.email,
+                      text: interpreter['email'] ?? 'No email',
                       color: Colors.black.withOpacity(0.6),
                     )
                   ],
                 ),
-                Spacer(),
-                // Container(
-                //     decoration: BoxDecoration(
-                //         color: Colors.green.withOpacity(0.9),
-                //         borderRadius: BorderRadius.circular(20)),
-                //     child: Padding(
-                //       padding: const EdgeInsets.all(6.0),
-                //       child: MyText(
-                //         text: interpreter.isAvailable
-                //             ? "Available"
-                //             : "Unavailable",
-                //         color: AppColors.backgroundColor,
-                //       ),
-                //     ))
+                const Spacer(),
+                Container(
+                  decoration: BoxDecoration(
+                    color: interpreter['isAvailable'] ?? false
+                        ? Colors.green.withOpacity(0.9)
+                        : Colors.red.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: MyText(
+                      text: interpreter['isAvailable'] ?? false
+                          ? "Available"
+                          : "Unavailable",
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10),
           child: Divider(),
-        )
+        ),
       ],
     );
   }

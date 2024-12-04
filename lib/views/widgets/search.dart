@@ -10,7 +10,7 @@ class SearchTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;  // Add onChanged callback
 
   const SearchTextField({
-    Key? key,
+    super.key,
     this.labelText = "Search your topic",
     this.labelStyle,
     this.suffixIcon,
@@ -18,7 +18,7 @@ class SearchTextField extends StatelessWidget {
     this.iconColor = Colors.grey,
     this.controller,  // Initialize the controller
     this.onChanged,  // Initialize the onChanged callback
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +31,9 @@ class SearchTextField extends StatelessWidget {
           color: iconColor,
           size: 26,
         ),
-        suffixIcon: suffixIcon ?? Icon(
+        suffixIcon: suffixIcon ?? const Icon(
           Icons.mic,
-          color: const Color(0xFFF8B11B),
+          color: Color(0xFFF8B11B),
           size: 26,
         ),
         floatingLabelBehavior: FloatingLabelBehavior.never,

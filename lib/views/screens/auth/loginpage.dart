@@ -1,4 +1,8 @@
 import 'package:deafassist/controllers/login_controller.dart';
+import 'package:deafassist/services/auth_service.dart';
+import 'package:deafassist/views/screens/deaf/bottomNavDeaf.dart';
+import 'package:deafassist/views/screens/interpreter/bttom.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:deafassist/utils/form_validator.dart';
 import 'package:deafassist/utils/snackbar_utils.dart';
@@ -6,20 +10,49 @@ import 'package:deafassist/views/screens/auth/registerpage.dart';
 import 'package:deafassist/const/app_colors.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final AuthService _auth = AuthService();
   bool _isObscure = true;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController forgotPasswordEmailController = TextEditingController();
+  final TextEditingController forgotPasswordEmailController =
+      TextEditingController();
 
   final LoginController _loginController = LoginController();
+
+  void _signIn(String email, String password) async {
+    try {
+      AuthService authService = AuthService();
+      String? role = await authService.signInAndFetchRole(email, password);
+
+      if (role != null) {
+        if (role == 'deaf') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BottomNavDeaf()),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BottomNavInterpreter()),
+          );
+        }
+      } else {
+        // Handle missing role scenario
+        print("Role not found for user.");
+      }
+    } catch (e) {
+      print("Error: $e");
+      // Show error to the user
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: Stack(
         children: [
-          Padding(
+          const Padding(
             padding: EdgeInsets.only(top: 60.0, left: 19),
             child: Text(
               'Hello \nSign in!',
@@ -39,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
             padding: const EdgeInsets.only(top: 180.0),
             child: Container(
               height: MediaQuery.of(context).size.height,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primaryColor,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(40),
@@ -54,16 +87,17 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       children: [
                         SizedBox(height: ht * 0.03),
-                        Align(
+                        const Align(
                           alignment: Alignment.topLeft,
                           child: Text(
                             "Welcome",
-                            style: TextStyle(fontSize: 30, fontWeight: FontWeight.normal),
+                            style: TextStyle(
+                                fontSize: 30, fontWeight: FontWeight.normal),
                           ),
                         ),
-                        SizedBox(height: 20.0),
+                        const SizedBox(height: 20.0),
                         _buildEmailField(),
-                        SizedBox(height: 20.0),
+                        const SizedBox(height: 20.0),
                         _buildPasswordField(),
                         _buildForgotPasswordButton(context),
                         _buildLoginButton(context),
@@ -84,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
     return TextFormField(
       controller: emailController,
       decoration: InputDecoration(
-        prefixIcon: Icon(Icons.email),
+        prefixIcon: const Icon(Icons.email),
         hintText: 'Email',
         filled: true,
         fillColor: AppColors.backgroundColor,
@@ -110,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
             });
           },
         ),
-        prefixIcon: Icon(Icons.lock),
+        prefixIcon: const Icon(Icons.lock),
         hintText: 'Password',
         filled: true,
         fillColor: AppColors.backgroundColor,
@@ -133,7 +167,7 @@ class _LoginPageState extends State<LoginPage> {
             forgotPasswordEmailController.text,
           );
         },
-        child: Text("Forgot Password?"),
+        child: const Text("Forgot Password?"),
       ),
     );
   }
@@ -144,22 +178,24 @@ class _LoginPageState extends State<LoginPage> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.buttonColor,
-          padding: EdgeInsets.symmetric(vertical: 8.0),
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
           ),
         ),
         onPressed: () {
-          _loginController.signIn(
-            context,
-            emailController.text,
-            passwordController.text,
-            _formKey,
-          );
+          // _loginController.signIn(
+          //   context,
+          //   emailController.text,
+          //   passwordController.text,
+          //   _formKey,
+          // );
+          _signIn(emailController.text, passwordController.text);
         },
-        child: Text(
+        child: const Text(
           "LOGIN",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
         ),
       ),
     );
@@ -169,15 +205,15 @@ class _LoginPageState extends State<LoginPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text("Don’t have an account yet?"),
+        const Text("Don’t have an account yet?"),
         TextButton(
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => RegisterPage()),
+              MaterialPageRoute(builder: (context) => const RegisterPage()),
             );
           },
-          child: Text("Register"),
+          child: const Text("Register"),
         ),
       ],
     );

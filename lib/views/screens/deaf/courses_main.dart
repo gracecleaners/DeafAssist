@@ -6,14 +6,14 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class Courses extends StatefulWidget {
-  Courses({Key? key}) : super(key: key);
+  const Courses({super.key});
 
   @override
   State<Courses> createState() => _CoursesState();
 }
 
 class _CoursesState extends State<Courses> {
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> filteredCourses = [];
   List<Map<String, dynamic>> courses = [];
 
@@ -74,11 +74,11 @@ class _CoursesState extends State<Courses> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    icon: Icon(Icons.arrow_back,
+                    icon: const Icon(Icons.arrow_back,
                         color: AppColors.backgroundColor, size: 30),
                   ),
-                  SizedBox(width: 20),
-                  Text(
+                  const SizedBox(width: 20),
+                  const Text(
                     'Courses',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -90,23 +90,23 @@ class _CoursesState extends State<Courses> {
                 ],
               ),
             ),
-            SizedBox(height: 5),
-            SizedBox(height: 20),
+            const SizedBox(height: 5),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: SearchTextField(
                 labelText: "Search for course by name",
-                suffixIcon: Icon(Icons.search, color: AppColors.primaryColor),
+                suffixIcon: const Icon(Icons.search, color: AppColors.primaryColor),
                 controller: _searchController,
                 onChanged: (value) {
                   _filterCourses(value); // Call the filter function when search input changes
                 },
               ),
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
             Expanded(
               child: Container(
-                padding: EdgeInsets.only(top: 30),
+                padding: const EdgeInsets.only(top: 30),
                 width: MediaQuery.of(context).size.width,
                 decoration: const BoxDecoration(
                   color: AppColors.backgroundColor,
@@ -116,13 +116,13 @@ class _CoursesState extends State<Courses> {
                   ),
                 ),
                 child: courses.isEmpty
-                    ? Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator())
                     : ListView.builder(
                         itemCount: filteredCourses.length, // Change to filteredCourses
                         itemBuilder: (context, index) {
                           return Card(
                             color: Colors.white,
-                            margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                             elevation: 5,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -133,9 +133,9 @@ class _CoursesState extends State<Courses> {
                                     BoxShadow(
                                         color: Colors.grey.withOpacity(0.4),
                                         blurRadius: 20,
-                                        offset: Offset(4, 4),
+                                        offset: const Offset(4, 4),
                                         spreadRadius: 1.0),
-                                    BoxShadow(
+                                    const BoxShadow(
                                         color: Colors.white,
                                         blurRadius: 20,
                                         offset: Offset(4, 4),
@@ -149,7 +149,7 @@ class _CoursesState extends State<Courses> {
                               child: ListTile(
                                 title: Text(
                                   filteredCourses[index]['course_name'].toUpperCase(),
-                                  style: TextStyle(fontSize: 20),
+                                  style: const TextStyle(fontSize: 20),
                                 ),
                                 subtitle: Text(
                                   filteredCourses[index]['description'],

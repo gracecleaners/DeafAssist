@@ -1,8 +1,11 @@
-import 'package:deafassist/controllers/register_controller.dart';
-import 'package:deafassist/views/screens/auth/loginpage.dart';
-import 'package:flutter/material.dart';
-import 'package:deafassist/utils/form_validator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deafassist/const/app_colors.dart';
+import 'package:deafassist/controllers/register_controller.dart';
+import 'package:deafassist/services/auth_service.dart';
+import 'package:deafassist/utils/form_validator.dart';
+import 'package:deafassist/views/screens/auth/loginpage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -15,17 +18,52 @@ class _RegisterPageState extends State<RegisterPage> {
   bool showProgress = false;
   bool visible = false;
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   bool _isObscure = true;
   bool _isObscure1 = true;
-  var options = ['interpreter', 'deaf'];
-  var _currentItemSelected = 'deaf';
-  var role = 'deaf';
 
-  final RegisterController _registerController = RegisterController();
+  final AuthService authService = AuthService();
+
+  Future<void> signUpAndPostDetails(
+    BuildContext context,
+    String email,
+    String password,
+    String name,
+    String district,
+    String employer,
+    String contact,
+    String experience,
+    String role,
+  ) async {
+    try {
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // Add user details to Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+        'name': name,
+        'email': email,
+        'district': district,
+        'currentEmployer': employer,
+        'contact': contact,
+        'yearsOfExperience': experience,
+        'role': role,
+      });
+
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => LoginPage()));
+    } catch (e) {
+      throw Exception('Error during sign up: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,34 +85,31 @@ class _RegisterPageState extends State<RegisterPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 50),
-                  Align(
+                  const Align(
                     alignment: Alignment.center,
                     child: Column(
                       children: [
-                        const Image(
+                        Image(
                           image: AssetImage("assets/images/logo.png"),
                           width: 100,
                         ),
-                        const SizedBox(height: 10.0),
-                        const Text(
+                        SizedBox(height: 10.0),
+                        Text(
                           "Register",
-                          style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 30.0, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 10.0),
-                        const Text("Create your account"),
+                        SizedBox(height: 10.0),
+                        Text("Create your account"),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20.0),
-                  _buildUsernameField(),
                   const SizedBox(height: 20.0),
                   _buildEmailField(),
                   const SizedBox(height: 20.0),
                   _buildPasswordField(),
                   const SizedBox(height: 20.0),
                   _buildConfirmPasswordField(),
-                  const SizedBox(height: 20.0),
-                  _buildRoleDropdown(),
                   const SizedBox(height: 20.0),
                   _buildRegisterButton(),
                   _buildLoginButton(),
@@ -84,23 +119,6 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildUsernameField() {
-    return TextFormField(
-      controller: usernameController,
-      decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.person),
-        hintText: 'Username',
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      validator: FormValidator.validateUsername,
     );
   }
 
@@ -170,50 +188,8 @@ class _RegisterPageState extends State<RegisterPage> {
           borderSide: BorderSide.none,
         ),
       ),
-      validator: (value) => FormValidator.validateConfirmPassword(passwordController.text, value),
-    );
-  }
-
-  Widget _buildRoleDropdown() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          "Role: ",
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        DropdownButton<String>(
-          dropdownColor: const Color(0xFFC4C4C4),
-          isDense: true,
-          isExpanded: false,
-          iconEnabledColor: Colors.black,
-          focusColor: Colors.black,
-          items: options.map((String dropDownStringItem) {
-            return DropdownMenuItem<String>(
-              value: dropDownStringItem,
-              child: Text(
-                dropDownStringItem,
-                style: TextStyle(
-                  color: Colors.black.withOpacity(0.5),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17,
-                ),
-              ),
-            );
-          }).toList(),
-          onChanged: (newValueSelected) {
-            setState(() {
-              _currentItemSelected = newValueSelected!;
-              role = newValueSelected;
-            });
-          },
-          value: _currentItemSelected,
-        ),
-      ],
+      validator: (value) =>
+          FormValidator.validateConfirmPassword(passwordController.text, value),
     );
   }
 
@@ -232,15 +208,16 @@ class _RegisterPageState extends State<RegisterPage> {
           setState(() {
             showProgress = true;
           });
-          _registerController.signUp(
-            context,
-            usernameController.text,
-            emailController.text,
-            passwordController.text,
-            confirmPasswordController.text,
-            role,
-            _formKey,
-          );
+          signUpAndPostDetails(
+              context,
+              emailController.text,
+              passwordController.text,
+              "name",
+              "district",
+              "employer",
+              "contact",
+              'experience',
+              'deaf');
         },
         child: const Text(
           "REGISTER",

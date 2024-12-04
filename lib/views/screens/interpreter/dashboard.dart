@@ -3,23 +3,24 @@ import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/modals/category.dart';
 import 'package:deafassist/services/auth_service.dart';
 import 'package:deafassist/views/screens/deaf/comm.dart';
-import 'package:deafassist/views/screens/deaf/notification.dart';
 import 'package:deafassist/views/screens/deaf/resource_main.dart';
 import 'package:deafassist/views/screens/deaf/upcoming_events.dart';
 import 'package:deafassist/views/screens/deaf/view_interpreters.dart';
+import 'package:deafassist/views/screens/interpreter/notification_dialog.dart';
+import 'package:deafassist/views/screens/interpreter/schedule.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
-class HomeDeaf extends StatefulWidget {
-  const HomeDeaf({super.key});
+class HomeInterpreter extends StatefulWidget {
+  const HomeInterpreter({super.key});
 
   @override
-  _HomeDeafState createState() => _HomeDeafState();
+  _HomeInterpreterState createState() => _HomeInterpreterState();
 }
 
-class _HomeDeafState extends State<HomeDeaf> {
+class _HomeInterpreterState extends State<HomeInterpreter> {
   // Initialize your AuthService
   @override
   Widget build(BuildContext context) {
@@ -46,30 +47,6 @@ class Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<Category> categoryList = [
-      Category(
-        name: 'Interpreters',
-        thumbnail: 'assets/images/gath.png',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ViewInterpreters(),
-            ),
-          );
-        },
-      ),
-      Category(
-        name: 'Resources',
-        thumbnail: 'assets/images/res.png',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const Resources(),
-            ),
-          );
-        },
-      ),
       Category(
         name: 'Community Support',
         thumbnail: 'assets/images/group.png',
@@ -221,43 +198,44 @@ class CategoryCard extends StatelessWidget {
 }
 
 class CustomAppBar extends StatefulWidget {
-  const CustomAppBar({super.key});
+  final AuthService _authService = AuthService();
+
+  CustomAppBar({super.key});
 
   @override
   _CustomAppBarState createState() => _CustomAppBarState();
 }
 
 class _CustomAppBarState extends State<CustomAppBar> {
-  final AuthService _authService = AuthService();
-  int _notificationCount = 0;
+  int _pendingBookingsCount = 0;
+  StreamSubscription? _bookingsSubscription;
 
   @override
   void initState() {
     super.initState();
-    _fetchNotificationCount();
+    _setupBookingNotificationListener();
   }
 
-  Future<void> _fetchNotificationCount() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
+  void _setupBookingNotificationListener() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
 
-      // Listen for user notifications
-      FirebaseFirestore.instance
-          .collection('user_notifications')
-          .where('userId', isEqualTo: currentUser.uid)
-          .where('read', isEqualTo: false)
-          .snapshots()
-          .listen((snapshot) {
-        if (mounted) {
-          setState(() {
-            _notificationCount = snapshot.docs.length;
-          });
-        }
+    _bookingsSubscription = FirebaseFirestore.instance
+        .collection('interpreter_bookings')
+        .where('interpreterId', isEqualTo: currentUser.uid)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        _pendingBookingsCount = snapshot.docs.length;
       });
-    } catch (e) {
-      print('Error fetching notification count: $e');
-    }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bookingsSubscription?.cancel();
+    super.dispose();
   }
 
   String getGreeting() {
@@ -276,7 +254,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
     double screenWidth = MediaQuery.of(context).size.width;
     double fontSize = screenWidth * 0.05;
     double fontSize1 = screenWidth * 0.07;
-
+    
     return Container(
       height: 250,
       width: double.infinity,
@@ -296,81 +274,67 @@ class _CustomAppBarState extends State<CustomAppBar> {
               color: AppColors.primaryColor,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 5),
-                        child: Text(
-                          getGreeting(),
-                          style: TextStyle(
-                            fontSize: fontSize,
-                            color: Colors.white,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: Text(
+                            getGreeting(),
+                            style: TextStyle(
+                                fontSize: fontSize,
+                                color: Colors.white),
                           ),
                         ),
-                      ),
-                      Text(
-                        ", Oscarlincoln",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: fontSize1,
-                          color: Colors.white,
+                        Text(
+                          ", Oscarlincoln",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: fontSize1,
+                              color: Colors.white),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   // Notification Icon with Badge
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationScreen(),
-                        ),
-                      );
-                    },
-                    child: Stack(
-                      children: [
-                        Icon(
-                          Icons.notifications_outlined,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                        if (_notificationCount > 0)
-                          Positioned(
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 18,
-                                minHeight: 18,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$_notificationCount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications, color: Colors.white),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const NotificationDialog(),
+                          );
+                        },
+                      ),
+                      if (_pendingBookingsCount > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '$_pendingBookingsCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
                               ),
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          // Lower part remains the same as in the original code
+          // Rest of the existing AppBar code remains the same
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -392,22 +356,22 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ViewInterpreters()));
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ScheduleAvailabilityScreen(),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green.withOpacity(0.7),
-                    minimumSize:
-                        Size(MediaQuery.of(context).size.width * 0.9, 40),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 15),
+                    minimumSize: Size(MediaQuery.of(context).size.width * 0.9, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: const Text(
-                    "Book an Interpreter",
+                    "Schedule Availability",
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,

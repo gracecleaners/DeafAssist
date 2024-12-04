@@ -13,6 +13,6 @@ class SplashScreen extends StatelessWidget {
       centered: true,
       duration: 3100,
       splashTransition: SplashTransition.scaleTransition,
-      nextScreen: LoginPage());
+      nextScreen: const LoginPage());
   }
 }

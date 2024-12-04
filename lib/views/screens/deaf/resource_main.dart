@@ -19,11 +19,11 @@ class Resources extends StatelessWidget {
        Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => Courses(),
+          builder: (context) => const Courses(),
         ),
       );
     },
-    icon: Icon(Icons.book, color: Colors.blue, size: 80,), // Example icon
+    icon: const Icon(Icons.book, color: Colors.blue, size: 80,), // Example icon
   ),
   ResourceIndex(
     name: 'PDFs',
@@ -31,11 +31,11 @@ class Resources extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => PDFresources(),
+          builder: (context) => const PDFresources(),
         ),
       );
     },
-    icon: Icon(Icons.picture_as_pdf, color: Colors.red, size: 80,), // Another example icon
+    icon: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 80,), // Another example icon
   ),
   ResourceIndex(
     name: 'Videos',
@@ -43,18 +43,18 @@ class Resources extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VideoLists(),
+          builder: (context) => const VideoLists(),
         ),
       );
     },
-    icon: Icon(Icons.video_library, color: Colors.yellow, size: 80,), // Example icon
+    icon: const Icon(Icons.video_library, color: Colors.yellow, size: 80,), // Example icon
   ),
   ResourceIndex(
     name: 'Signs',
     onTap: () {
       // Handle tap
     },
-    icon: Icon(Icons.handshake, color: Colors.green, size: 80,), // Another example icon
+    icon: const Icon(Icons.handshake, color: Colors.green, size: 80,), // Another example icon
   ),
 ];
 
@@ -65,7 +65,7 @@ class Resources extends StatelessWidget {
         leading: IconButton(onPressed: (){
           Navigator.pop(context);
         },
-        icon: Icon(Icons.arrow_back, color: AppColors.buttonColor,),
+        icon: const Icon(Icons.arrow_back, color: AppColors.buttonColor,),
         ),
       ),
       body: SingleChildScrollView(
@@ -77,7 +77,7 @@ class Resources extends StatelessWidget {
               child: Container(
               width: MediaQuery.of(context).size.width * 0.95, // Specify the width of the container
               height: 350, // Specify the height of the container
-              padding: EdgeInsets.all(10), // Add padding inside the container
+              padding: const EdgeInsets.all(10), // Add padding inside the container
               decoration: BoxDecoration(
                 color: Colors.white, // Background color of the container
                 borderRadius: BorderRadius.circular(20), // Rounded corners
@@ -87,14 +87,14 @@ class Resources extends StatelessWidget {
                 fit: BoxFit.cover, // Adjust the image to cover the container
               ),),
             ),
-            SizedBox(height: 20,), 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            const SizedBox(height: 20,), 
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: MyText(text: "Resource Index", fontSize: 25,),
             ),
-            SizedBox(height: 20,), 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            const SizedBox(height: 20,), 
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: MyText(text: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ips um has been the industry's standard dummy", maxLines: 10,),
             ),
         
@@ -127,9 +127,9 @@ class Resources extends StatelessWidget {
 class ResourceCard extends StatelessWidget {
   final ResourceIndex resource;
   const ResourceCard({
-    Key? key,
+    super.key,
     required this.resource,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

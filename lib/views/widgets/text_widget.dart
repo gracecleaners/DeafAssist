@@ -11,7 +11,7 @@ class MyText extends StatelessWidget {
   final TextOverflow overflow;
 
   const MyText({
-    Key? key,
+    super.key,
     required this.text,
     this.fontSize = 16.0,
     this.color = Colors.black,
@@ -20,7 +20,7 @@ class MyText extends StatelessWidget {
     this.textAlign = TextAlign.start,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -60,9 +60,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyB8lbALmHOj8eLpzt5NBYdzBNr3WtM7yuc',
-    appId: '1:1015216355326:android:51af6e46b8aafce06bf2af',
+    appId: '1:1015216355326:android:99cbe9f6255068f96bf2af',
     messagingSenderId: '1015216355326',
     projectId: 'reachall-f6f24',
     storageBucket: 'reachall-f6f24.appspot.com',
   );
+
 }

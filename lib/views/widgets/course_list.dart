@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class CourseListPage extends StatefulWidget {
+  const CourseListPage({super.key});
+
   @override
   _CourseListPageState createState() => _CourseListPageState();
 }

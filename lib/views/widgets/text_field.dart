@@ -20,7 +20,7 @@ class CustomTextField extends StatelessWidget {
   final bool filled;
 
   const CustomTextField({
-    Key? key,
+    super.key,
     this.labelText,
     this.hintText,
     this.prefixIcon,
@@ -37,7 +37,7 @@ class CustomTextField extends StatelessWidget {
     this.cursorColor = Colors.black,
     this.fillColor = Colors.white,
     this.filled = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

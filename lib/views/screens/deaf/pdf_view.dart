@@ -6,11 +6,12 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 class PDFViewPage extends StatelessWidget {
   final PDFModel pdf;
 
-  const PDFViewPage({Key? key, required this.pdf}) : super(key: key);
+  const PDFViewPage({super.key, required this.pdf});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(pdf.name),
       ),

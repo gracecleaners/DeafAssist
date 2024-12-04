@@ -1,6 +1,5 @@
 import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/modals/pdf.dart';
-import 'package:deafassist/views/screens/deaf/pdf_view.dart';
 import 'package:deafassist/views/widgets/pdf_list.dart';
 import 'package:deafassist/views/widgets/text_widget.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +18,7 @@ class PDFresources extends StatelessWidget {
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: Icon(Icons.arrow_back, color: AppColors.buttonColor),
+          icon: const Icon(Icons.arrow_back, color: AppColors.buttonColor),
         ),
       ),
       body: SingleChildScrollView(
@@ -31,7 +30,7 @@ class PDFresources extends StatelessWidget {
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.95, // Specify the width of the container
                 height: 350, // Specify the height of the container
-                padding: EdgeInsets.all(10), // Add padding inside the container
+                padding: const EdgeInsets.all(10), // Add padding inside the container
                 decoration: BoxDecoration(
                   color: Colors.white, // Background color of the container
                   borderRadius: BorderRadius.circular(20), // Rounded corners
@@ -42,24 +41,24 @@ class PDFresources extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: MyText(
                 text: "PDF Resources",
                 fontSize: 25,
               ),
             ),
-            SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: MyText(
                 text: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy",
                 maxLines: 10,
               ),
             ),
-            SizedBox(height: 10),
-            Padding(
+            const SizedBox(height: 10),
+            const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: MyText(
                 text: "Resources to Enrich",
@@ -68,7 +67,7 @@ class PDFresources extends StatelessWidget {
                 fontStyle: FontStyle.italic,
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: SizedBox(
