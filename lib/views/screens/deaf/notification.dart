@@ -54,7 +54,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  Future<void> _markNotificationsAsRead(List<QueryDocumentSnapshot> docs) async {
+  Future<void> _markNotificationsAsRead(
+      List<QueryDocumentSnapshot> docs) async {
     for (var doc in docs) {
       await FirebaseFirestore.instance
           .collection('user_notifications')
@@ -68,16 +69,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () => Navigator.pop(context), 
+          onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
         title: const Text(
-          'Notifications', 
+          'Notifications',
           style: TextStyle(
-            color: Colors.white, 
-            fontSize: 28, 
-            fontWeight: FontWeight.bold
-          ),
+              color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.primaryColor,
       ),
@@ -95,11 +93,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final notification = _notifications[index];
+                    // Check if this is a declined booking notification
+                    final isDeclined =
+                        notification['message']?.contains('declined') ?? false;
+
                     return ListTile(
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, 
-                        vertical: 8
-                      ),
+                          horizontal: 16, vertical: 8),
                       title: Text(
                         notification['title'] ?? 'Notification',
                         style: const TextStyle(
@@ -113,7 +113,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           Text(
                             notification['message'] ?? '',
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color: isDeclined
+                                  ? Colors.red
+                                  : Colors.grey.shade600,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -128,6 +130,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ),
                         ],
                       ),
+                      trailing: isDeclined
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('😢', style: TextStyle(fontSize: 20)),
+                                SizedBox(width: 4),
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : null,
                     );
                   },
                 ),

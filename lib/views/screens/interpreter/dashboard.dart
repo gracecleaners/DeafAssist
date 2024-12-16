@@ -198,9 +198,7 @@ class CategoryCard extends StatelessWidget {
 }
 
 class CustomAppBar extends StatefulWidget {
-  final AuthService _authService = AuthService();
-
-  CustomAppBar({super.key});
+  const CustomAppBar({super.key});
 
   @override
   _CustomAppBarState createState() => _CustomAppBarState();
@@ -209,11 +207,34 @@ class CustomAppBar extends StatefulWidget {
 class _CustomAppBarState extends State<CustomAppBar> {
   int _pendingBookingsCount = 0;
   StreamSubscription? _bookingsSubscription;
+  String _userName = ''; // Add this variable to store the user's name
 
   @override
   void initState() {
     super.initState();
     _setupBookingNotificationListener();
+    _fetchUserName(); // Call this method to get the user's name
+  }
+
+  Future<void> _fetchUserName() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Fetch user document from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          _userName = userDoc.data()?['name'] ?? ''; // Adjust the field name as needed
+        });
+      }
+    } catch (e) {
+      print('Error fetching user name: $e');
+    }
   }
 
   void _setupBookingNotificationListener() {
@@ -274,28 +295,25 @@ class _CustomAppBarState extends State<CustomAppBar> {
               color: AppColors.primaryColor,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Text(
-                            getGreeting(),
-                            style: TextStyle(
-                                fontSize: fontSize,
-                                color: Colors.white),
-                          ),
-                        ),
-                        Text(
-                          ", Oscarlincoln",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: fontSize1,
-                              color: Colors.white),
-                        ),
-                      ],
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        getGreeting(),
+                        style: TextStyle(
+                            fontSize: fontSize,
+                            color: Colors.white),
+                      ),
+                      Text(
+                        "$_userName", // Dynamically display user name
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: fontSize1,
+                            color: Colors.white),
+                      ),
+                    ],
                   ),
                   // Notification Icon with Badge
                   Stack(
@@ -334,7 +352,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ),
             ),
           ),
-          // Rest of the existing AppBar code remains the same
+          // Lower part with Schedule Availability button
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -363,7 +381,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.withOpacity(0.7),
+                    backgroundColor: AppColors.primaryColor,
                     minimumSize: Size(MediaQuery.of(context).size.width * 0.9, 40),
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
@@ -386,7 +404,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
     );
   }
 }
-
 class HorizontalImageScroll extends StatefulWidget {
   final List<String> imageUrls; // List of image URLs or asset paths
 
@@ -509,7 +526,7 @@ class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
                     // Button action goes here
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.primaryColor,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10), // Button size
                     shape: RoundedRectangleBorder(

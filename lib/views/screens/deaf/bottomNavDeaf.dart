@@ -1,3 +1,4 @@
+import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/views/screens/auth/profilesample.dart';
 import 'package:deafassist/views/screens/deaf/homeDeaf.dart';
 import 'package:deafassist/views/screens/deaf/main_chat_list.dart';
@@ -64,7 +65,7 @@ class _BottomNavDeafState extends State<BottomNavDeaf> with SingleTickerProvider
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFFF8B11B),
+          selectedItemColor: AppColors.primaryColor,
           backgroundColor: Colors.transparent, // Make background transparent
           elevation: 0,
           items: [
@@ -89,12 +90,12 @@ class _BottomNavDeafState extends State<BottomNavDeaf> with SingleTickerProvider
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: _selectedIndex == index ? const Color(0xFFF8B11B) : Colors.grey),
+            Icon(icon, color: _selectedIndex == index ? AppColors.primaryColor : Colors.grey),
             const SizedBox(height: 4), // Space between icon and label
             Text(
               label,
               style: TextStyle(
-                color: _selectedIndex == index ? const Color(0xFFF8B11B) : Colors.grey,
+                color: _selectedIndex == index ? AppColors.primaryColor : Colors.grey,
                 fontSize: 12, // Fixed font size for all items
               ),
             ),

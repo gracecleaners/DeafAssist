@@ -1,181 +1,187 @@
 import 'package:deafassist/const/app_colors.dart';
-import 'package:deafassist/views/widgets/course_detail.dart';
-import 'package:deafassist/views/widgets/search.dart';
+import 'package:deafassist/views/screens/deaf/courseDetails.dart';
+import 'package:deafassist/views/screens/deaf/deatil.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:deafassist/modals/course.dart';
 
-class Courses extends StatefulWidget {
-  const Courses({super.key});
+class CoursesPage extends StatefulWidget {
+  const CoursesPage({Key? key}) : super(key: key);
 
   @override
-  State<Courses> createState() => _CoursesState();
+  _CoursesPageState createState() => _CoursesPageState();
 }
 
-class _CoursesState extends State<Courses> {
+class _CoursesPageState extends State<CoursesPage> {
   final TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> filteredCourses = [];
-  List<Map<String, dynamic>> courses = [];
+  List<Courses> _courses = [];
+  List<Courses> _filteredCourses = [];
+  String _selectedMode = 'All';
+  String _selectedDifficulty = 'All';
 
   @override
   void initState() {
     super.initState();
-    fetchCourses();
+    _fetchCourses();
   }
 
-  void _filterCourses(String query) {
+  void _fetchCourses() {
     setState(() {
-      if (query.isEmpty) {
-        filteredCourses = courses; // Show all courses if the search is empty
-      } else {
-        filteredCourses = courses.where((course) {
-          return course['course_name']
-              .toLowerCase()
-              .contains(query.toLowerCase()); // Case-insensitive search
-        }).toList();
-      }
+      _courses = Courses.sampleCourses;
+      _filteredCourses = _courses;
     });
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  void _filterCourses() {
+    setState(() {
+      _filteredCourses = _courses.where((course) {
+        final nameMatch = _searchController.text.isEmpty ||
+            (course.name
+                    ?.toLowerCase()
+                    .contains(_searchController.text.toLowerCase()) ??
+                false);
 
-  Future<void> fetchCourses() async {
-    final response = await http
-        .get(Uri.parse('https://okumuoscar.pythonanywhere.com/api/courses/'));
+        final modeMatch =
+            _selectedMode == 'All' || course.mode == _selectedMode;
 
-    if (response.statusCode == 200) {
-      setState(() {
-        // Decode the JSON directly into the list of maps
-        courses = List<Map<String, dynamic>>.from(json.decode(response.body));
-        filteredCourses = courses; // Update filteredCourses too
-      });
-    } else {
-      throw Exception('Failed to load courses');
-    }
+        final difficultyMatch = _selectedDifficulty == 'All' ||
+            course.difficulty == _selectedDifficulty;
+
+        return nameMatch && modeMatch && difficultyMatch;
+      }).toList();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryColor,
-      body: SafeArea(
-        child: Column(
+      appBar: AppBar(
+        leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.arrow_back_ios, color: Colors.white,)),
+        title: const Text(
+          'Courses',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: AppColors.primaryColor,
+      ),
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => _filterCourses(),
+              decoration: InputDecoration(
+                hintText: 'Search courses...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+
+          // Filter Rows
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                // Mode Filter
+                _buildFilterChip('Mode', ['All', 'Online', 'Physical'],
+                    (value) {
+                  setState(() {
+                    _selectedMode = value;
+                    _filterCourses();
+                  });
+                }),
+              ],
+            ),
+          ),
+
+          // Course List
+          Expanded(
+            child: _filteredCourses.isEmpty
+                ? const Center(child: Text('No courses found'))
+                : ListView.builder(
+                    itemCount: _filteredCourses.length,
+                    itemBuilder: (context, index) {
+                      final course = _filteredCourses[index];
+                      return _buildCourseCard(course);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(
+      String label, List<String> options, Function(String) onSelected) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: DropdownButton<String>(
+        hint: Text(label),
+        items: options.map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          );
+        }).toList(),
+        onChanged: (newValue) => onSelected(newValue!),
+      ),
+    );
+  }
+
+  Widget _buildCourseCard(Courses course) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      elevation: 4,
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(10),
+        leading: Image(
+            image: AssetImage(course.imageUrl ?? 'assets/images/default_image.png'), // Fallback to a default image if `course.imageUrl` is null
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+          ),
+        title: Text(
+          course.name ?? 'Unnamed Course',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.arrow_back,
-                        color: AppColors.backgroundColor, size: 30),
-                  ),
-                  const SizedBox(width: 20),
-                  const Text(
-                    'Courses',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Quicksand',
-                      fontSize: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            Text(course.description ?? 'No description', overflow: TextOverflow.ellipsis,),
             const SizedBox(height: 5),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: SearchTextField(
-                labelText: "Search for course by name",
-                suffixIcon: const Icon(Icons.search, color: AppColors.primaryColor),
-                controller: _searchController,
-                onChanged: (value) {
-                  _filterCourses(value); // Call the filter function when search input changes
-                },
-              ),
-            ),
-            const SizedBox(height: 30),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.only(top: 30),
-                width: MediaQuery.of(context).size.width,
-                decoration: const BoxDecoration(
-                  color: AppColors.backgroundColor,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(50),
-                    topRight: Radius.circular(50),
-                  ),
-                ),
-                child: courses.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                        itemCount: filteredCourses.length, // Change to filteredCourses
-                        itemBuilder: (context, index) {
-                          return Card(
-                            color: Colors.white,
-                            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                            elevation: 5,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: Colors.grey.withOpacity(0.4),
-                                        blurRadius: 20,
-                                        offset: const Offset(4, 4),
-                                        spreadRadius: 1.0),
-                                    const BoxShadow(
-                                        color: Colors.white,
-                                        blurRadius: 20,
-                                        offset: Offset(4, 4),
-                                        spreadRadius: 1.0),
-                                  ],
-                                  border: Border.all(
-                                    color: Colors.black.withOpacity(0.1),
-                                    width: 2,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10)),
-                              child: ListTile(
-                                title: Text(
-                                  filteredCourses[index]['course_name'].toUpperCase(),
-                                  style: const TextStyle(fontSize: 20),
-                                ),
-                                subtitle: Text(
-                                  filteredCourses[index]['description'],
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                onTap: () {
-                                  // Navigate to course detail page
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CourseDetailPage(
-                                        courseId: filteredCourses[index]['id'],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
+           
+            Row(
+              children: [
+                const Icon(Icons.person, size: 16),
+                const SizedBox(width: 5),
+                Text(course.instructor ?? 'Unknown Instructor'),
+              ],
             ),
           ],
         ),
+        trailing: Text(
+          '\$${course.price?.toStringAsFixed(2) ?? '0.00'}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.green,
+          ),
+        ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CourseDetail(courseId: course.id!),
+            ),
+          );
+        },
       ),
     );
   }

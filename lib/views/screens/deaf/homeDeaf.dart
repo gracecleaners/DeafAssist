@@ -230,11 +230,34 @@ class CustomAppBar extends StatefulWidget {
 class _CustomAppBarState extends State<CustomAppBar> {
   final AuthService _authService = AuthService();
   int _notificationCount = 0;
+  String _userName = ''; // Add this variable to store the user's name
 
   @override
   void initState() {
     super.initState();
     _fetchNotificationCount();
+    _fetchUserName(); // Call this method to get the user's name
+  }
+
+  Future<void> _fetchUserName() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Fetch user document from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          _userName = userDoc.data()?['name'] ?? ''; // Adjust the field name as needed
+        });
+      }
+    } catch (e) {
+      print('Error fetching user name: $e');
+    }
   }
 
   Future<void> _fetchNotificationCount() async {
@@ -298,20 +321,18 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 5),
-                        child: Text(
-                          getGreeting(),
-                          style: TextStyle(
-                            fontSize: fontSize,
-                            color: Colors.white,
-                          ),
+                      Text(
+                        getGreeting(),
+                        style: TextStyle(
+                          fontSize: fontSize,
+                          color: Colors.white,
                         ),
                       ),
                       Text(
-                        ", Oscarlincoln",
+                        _userName, // Use the fetched user name here
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: fontSize1,
@@ -370,7 +391,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ),
             ),
           ),
-          // Lower part remains the same as in the original code
+          // Lower part with Book an Interpreter button
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -392,16 +413,22 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ViewInterpreters()));
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ViewInterpreters(),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.withOpacity(0.7),
-                    minimumSize:
-                        Size(MediaQuery.of(context).size.width * 0.9, 40),
+                    backgroundColor: AppColors.primaryColor,
+                    minimumSize: Size(
+                      MediaQuery.of(context).size.width * 0.9, 
+                      40,
+                    ),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 15),
+                      horizontal: 40, 
+                      vertical: 15,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -545,7 +572,7 @@ class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
                     // Button action goes here
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.primaryColor,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10), // Button size
                     shape: RoundedRectangleBorder(

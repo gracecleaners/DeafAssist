@@ -14,11 +14,12 @@ class PDFresources extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
+        backgroundColor: AppColors.backgroundColor,
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: const Icon(Icons.arrow_back, color: AppColors.buttonColor),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.buttonColor),
         ),
       ),
       body: SingleChildScrollView(

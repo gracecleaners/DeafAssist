@@ -27,8 +27,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // home: const SplashScreen(),
-      home: BottomNavDeaf(),
-      // home: LoginPage(),
+      // home: BottomNavDeaf(),
+      home: LoginPage(),
+      // home: ViewInterpreters(),
     );
   }
 }

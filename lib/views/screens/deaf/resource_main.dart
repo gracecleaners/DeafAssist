@@ -1,7 +1,6 @@
 import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/views/screens/deaf/courses_main.dart';
 import 'package:deafassist/views/screens/deaf/pdf_resources.dart';
-import 'package:deafassist/views/screens/deaf/videos.dart';
 import 'package:deafassist/views/widgets/text_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:deafassist/modals/resources.dart';
@@ -19,7 +18,7 @@ class Resources extends StatelessWidget {
        Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const Courses(),
+          builder: (context) => const CoursesPage(),
         ),
       );
     },
@@ -37,35 +36,17 @@ class Resources extends StatelessWidget {
     },
     icon: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 80,), // Another example icon
   ),
-  ResourceIndex(
-    name: 'Videos',
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const VideoLists(),
-        ),
-      );
-    },
-    icon: const Icon(Icons.video_library, color: Colors.yellow, size: 80,), // Example icon
-  ),
-  ResourceIndex(
-    name: 'Signs',
-    onTap: () {
-      // Handle tap
-    },
-    icon: const Icon(Icons.handshake, color: Colors.green, size: 80,), // Another example icon
-  ),
 ];
 
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
+        backgroundColor: AppColors.backgroundColor,
         leading: IconButton(onPressed: (){
           Navigator.pop(context);
         },
-        icon: const Icon(Icons.arrow_back, color: AppColors.buttonColor,),
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.buttonColor,),
         ),
       ),
       body: SingleChildScrollView(
@@ -90,7 +71,7 @@ class Resources extends StatelessWidget {
             const SizedBox(height: 20,), 
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
-              child: MyText(text: "Resource Index", fontSize: 25,),
+              child: MyText(text: "Resource Index", fontSize: 25,fontWeight: FontWeight.bold,),
             ),
             const SizedBox(height: 20,), 
             const Padding(
@@ -136,7 +117,7 @@ class ResourceCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => resource.onTap(), // Ensuring `onTap` executes
       child: Container(
-        height: 50,
+        height: 30,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,

@@ -1,3 +1,4 @@
+import 'package:deafassist/const/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,10 +9,12 @@ class ScheduleAvailabilityScreen extends StatefulWidget {
   const ScheduleAvailabilityScreen({Key? key}) : super(key: key);
 
   @override
-  _ScheduleAvailabilityScreenState createState() => _ScheduleAvailabilityScreenState();
+  _ScheduleAvailabilityScreenState createState() =>
+      _ScheduleAvailabilityScreenState();
 }
 
-class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen> {
+class _ScheduleAvailabilityScreenState
+    extends State<ScheduleAvailabilityScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   final Set<DateTime> _selectedDays = {};
@@ -19,11 +22,8 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     setState(() {
       // Normalize the selected day to remove time components
-      final normalizedDay = DateTime(
-        selectedDay.year, 
-        selectedDay.month, 
-        selectedDay.day
-      );
+      final normalizedDay =
+          DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
 
       if (_selectedDays.contains(normalizedDay)) {
         _selectedDays.remove(normalizedDay);
@@ -49,8 +49,7 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
           content: SingleChildScrollView(
             child: Column(
               children: _selectedDays
-                  .map((date) => Text(
-                      '${date.year}-${date.month}-${date.day}'))
+                  .map((date) => Text('${date.year}-${date.month}-${date.day}'))
                   .toList(),
             ),
           ),
@@ -77,8 +76,8 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
       }
 
       // Reference to Firestore collection
-      final availabilityCollection = FirebaseFirestore.instance
-          .collection('interpreter_availability');
+      final availabilityCollection =
+          FirebaseFirestore.instance.collection('interpreter_availability');
 
       // Check for existing availability document
       final querySnapshot = await availabilityCollection
@@ -95,8 +94,7 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
         // Update existing document
         await querySnapshot.docs.first.reference.update({
           'availableDates': FieldValue.arrayUnion(
-            _selectedDays.map((date) => date.toIso8601String()).toList()
-          )
+              _selectedDays.map((date) => date.toIso8601String()).toList())
         });
       } else {
         // Add new document
@@ -122,8 +120,13 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Schedule Your Availability'),
-        backgroundColor: Colors.green,
+        leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.arrow_back_ios, color: Colors.white,)),
+        title: const Text('Schedule Your Availability', style: TextStyle(color: Colors.white),),
+        backgroundColor: AppColors.primaryColor,
       ),
       body: Column(
         children: [
@@ -134,9 +137,8 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
             calendarFormat: _calendarFormat,
             selectedDayPredicate: (day) {
               // Normalize the day for comparison
-              return _selectedDays.contains(
-                DateTime(day.year, day.month, day.day)
-              );
+              return _selectedDays
+                  .contains(DateTime(day.year, day.month, day.day));
             },
             onDaySelected: _onDaySelected,
             onFormatChanged: (format) {
@@ -146,11 +148,11 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
             },
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.7),
+                color: AppColors.primaryColor.withOpacity(0.7),
                 shape: BoxShape.circle,
               ),
               todayDecoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.3),
+                color: AppColors.primaryColor.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
             ),
@@ -179,7 +181,7 @@ class _ScheduleAvailabilityScreenState extends State<ScheduleAvailabilityScreen>
           ElevatedButton(
             onPressed: _selectedDays.isNotEmpty ? _saveAvailability : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.primaryColor,
               minimumSize: const Size(200, 50),
             ),
             child: const Text(

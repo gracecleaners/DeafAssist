@@ -56,9 +56,9 @@ class _ChatScreenState extends State<ChatScreen> {
             right: 0,
             child: AppBar(
               backgroundColor: AppColors.primaryColor,
-              title: Text(widget.otherUserName),
+              title: Text(widget.otherUserName, style: TextStyle(color: Colors.white),),
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),

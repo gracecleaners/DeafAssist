@@ -13,7 +13,13 @@ class PDFViewPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(pdf.name),
+        backgroundColor: Colors.white,
+        leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.arrow_back_ios)),
+        title: Text(pdf.name, style: TextStyle(fontWeight: FontWeight.bold),),
       ),
       body: SfPdfViewer.asset(
         pdf.assetPath,

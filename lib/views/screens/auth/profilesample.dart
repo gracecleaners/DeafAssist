@@ -1,10 +1,16 @@
+import 'dart:io';
 import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/services/auth_service.dart';
 import 'package:deafassist/views/screens/auth/loginpage.dart';
+import 'package:deafassist/views/screens/deaf/settingsDeaf.dart';
+import 'package:deafassist/views/screens/deaf/support.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
+// ProfileScreen is a stateful widget for user profile management
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -13,10 +19,13 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // Service and Firebase instances
   final AuthService _authService = AuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  // User profile data
   String _userName = 'Loading...';
   String _userEmail = 'Loading...';
   String _profileImageUrl = '';
@@ -28,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _fetchUserData();
   }
 
+  // Fetch user data from Firestore
   Future<void> _fetchUserData() async {
     try {
       final currentUser = _auth.currentUser;
@@ -42,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           _userName = userDoc.data()?['name'] ?? 'No Name';
           _userEmail = userDoc.data()?['email'] ?? 'No Email';
-          _profileImageUrl = userDoc.data()?['profileImageUrl'] ?? '';
+          _profileImageUrl = userDoc.data()?['profileImage'] ?? '';
           _userRole = userDoc.data()?['role'] ?? 'User';
         });
       }
@@ -53,6 +63,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Pick and upload profile image from gallery
+  Future<void> _pickAndUploadProfileImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 80,
+      );
+
+      if (image == null) return;
+
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return;
+
+      // Upload image to Firebase Storage
+      final storageRef = _storage.ref().child('profile_images/${currentUser.uid}.jpg');
+      await storageRef.putFile(File(image.path));
+
+      // Get download URL
+      final imageUrl = await storageRef.getDownloadURL();
+
+      // Update Firestore with new image URL
+      await _firestore.collection('users').doc(currentUser.uid).update({
+        'profileImage': imageUrl,
+      });
+
+      // Update local state
+      setState(() {
+        _profileImageUrl = imageUrl;
+      });
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile image updated successfully')),
+      );
+    } catch (e) {
+      // Close loading dialog if still open
+      Navigator.of(context).pop();
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile image: $e')),
+      );
+    }
+  }
+
+  // Show dialog to edit user profile
   void _showEditProfileDialog() {
     final nameController = TextEditingController(text: _userName);
     final emailController = TextEditingController(text: _userEmail);
@@ -61,6 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: AppColors.backgroundColor,
           title: const Text('Edit Profile'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -103,7 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryColor,
               ),
-              child: const Text('Save'),
+              child: const Text('Save', style: TextStyle(color: Colors.white),),
             ),
           ],
         );
@@ -111,6 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Update user profile in Firestore and Firebase Authentication
   Future<void> _updateUserProfile(String newName, String newEmail) async {
     try {
       final currentUser = _auth.currentUser;
@@ -153,6 +226,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Handle sign out process
+  void _handleSignOut(BuildContext context) async {
+    try {
+      await _authService.signOut();
+      Navigator.pushReplacement(
+        context, 
+        MaterialPageRoute(builder: (context) => LoginPage())
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to sign out: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,26 +250,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Profile Image
-              SizedBox(height: 26,),
-              Text("My Account", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),),
-              SizedBox(height: 26,),
-              SizedBox(
-                height: 200,
-                width: 200,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(100),
-                  child: _profileImageUrl.isNotEmpty
-                      ? Image.network(
-                          _profileImageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset("assets/images/oscar.png");
-                          },
-                        )
-                      : Image.asset("assets/images/oscar.png"),
-                ),
+              const SizedBox(height: 26,),
+              const Text(
+                "My Account", 
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 26,),
+              
+              // Profile Image with Edit Option
+              Stack(
+                children: [
+                  SizedBox(
+                    height: 200,
+                    width: 200,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: _profileImageUrl.isNotEmpty
+                          ? Image.network(
+                              _profileImageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset("assets/images/user.png");
+                              },
+                            )
+                          : Image.asset("assets/images/user.png"),
+                    ),
+                  ),
+                  // Edit Profile Image Button
+                  Positioned(
+                    bottom: 10,
+                    right: 10,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.edit, 
+                          color: Colors.white,
+                        ),
+                        onPressed: _pickAndUploadProfileImage,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
               const SizedBox(height: 10),
               
               // Name and Email
@@ -204,7 +319,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: const Text(
                     "Edit Profile",
-                    style: TextStyle(color: Colors.black),
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
               ),
@@ -222,13 +337,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: "My Bookings", 
                 icon: Icons.calendar_month
               ),
-              const ListTileWidget(
+              ListTileWidget(
                 title: "Settings", 
-                icon: Icons.settings
+                icon: Icons.settings,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => AppSettingsPage(),
+                    ),
+                  );
+                },
               ),
-              const ListTileWidget(
-                title: "Help Center", 
-                icon: Icons.help_outlined
+             ListTileWidget(
+                title: "Support & Inquiries", 
+                icon: Icons.help_outlined,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context)=> SupportScreen())),
               ),
               ListTileWidget(
                 title: "Sign Out",
@@ -241,22 +364,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
-  void _handleSignOut(BuildContext context) async {
-    try {
-      await _authService.signOut();
-      Navigator.pushReplacement(
-        context, 
-        MaterialPageRoute(builder: (context) => LoginPage())
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to sign out: $e')),
-      );
-    }
-  }
 }
 
+// Reusable ListTile Widget
 class ListTileWidget extends StatelessWidget {
   final String title;
   final IconData icon;

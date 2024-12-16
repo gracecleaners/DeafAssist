@@ -19,6 +19,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool visible = false;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
@@ -56,6 +57,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'contact': contact,
         'yearsOfExperience': experience,
         'role': role,
+        'profileImage': 'assets/images/user.png',
       });
 
       Navigator.push(
@@ -97,13 +99,15 @@ class _RegisterPageState extends State<RegisterPage> {
                         Text(
                           "Register",
                           style: TextStyle(
-                              fontSize: 30.0, fontWeight: FontWeight.bold),
+                              fontSize: 30.0, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         SizedBox(height: 10.0),
-                        Text("Create your account"),
+                        Text("Create your account", style: TextStyle(color: Colors.white),),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20.0),
+                  _buildnameField(),
                   const SizedBox(height: 20.0),
                   _buildEmailField(),
                   const SizedBox(height: 20.0),
@@ -137,6 +141,22 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       validator: FormValidator.validateEmail,
       keyboardType: TextInputType.emailAddress,
+    );
+  }
+  Widget _buildnameField() {
+    return TextFormField(
+      controller: nameController,
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.person),
+        hintText: 'Full Names',
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      keyboardType: TextInputType.name,
     );
   }
 
@@ -212,7 +232,7 @@ class _RegisterPageState extends State<RegisterPage> {
               context,
               emailController.text,
               passwordController.text,
-              "name",
+              nameController.text,
               "district",
               "employer",
               "contact",
@@ -235,7 +255,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text("Already have an account?"),
+        const Text("Already have an account?", style: TextStyle(color: Colors.white),),
         TextButton(
           onPressed: () {
             Navigator.pushReplacement(
@@ -243,7 +263,7 @@ class _RegisterPageState extends State<RegisterPage> {
               MaterialPageRoute(builder: (context) => const LoginPage()),
             );
           },
-          child: const Text("Login"),
+          child: const Text("Login", style: TextStyle(color: Colors.grey),),
         ),
       ],
     );

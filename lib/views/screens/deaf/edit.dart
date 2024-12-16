@@ -187,7 +187,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 )
               )
-            : Text('Save Changes'),
+            : Text('Save Changes', style: TextStyle(color: Colors.white),),
         ),
       ],
     );

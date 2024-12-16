@@ -3,6 +3,7 @@ import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/views/screens/deaf/booking_dialog.dart';
 import 'package:deafassist/views/screens/deaf/chat_screen.dart';
 import 'package:deafassist/views/screens/deaf/edit.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
@@ -140,8 +141,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               ),
             ),
             SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap( // Changed from Row to Wrap to handle overflow
+              alignment: WrapAlignment.center,
+              spacing: 10, // Horizontal space between buttons
+              runSpacing: 10, // Vertical space between buttons
               children: [
                 ElevatedButton(
                   onPressed: () {
@@ -155,14 +158,32 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     );
                   },
                   child: Text(
-                    'Book',
+                    'Book Event',
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
                   ),
                 ),
-                SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return OnlineInterpretationDialog(
+                          interpreterId: widget.interpreterId,
+                        );
+                      },
+                    );
+                  },
+                  child: Text(
+                    'Online Interpretation',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green, // Different color to distinguish
+                  ),
+                ),
                 OutlinedButton(
                   onPressed: () {
                     if (interpreterData != null) {
@@ -206,12 +227,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             icon: Icons.web,
             title: 'Website',
             subtitle: 'https://bootdey.com',
-          ),
-          Divider(height: 1),
-          _buildSocialLinkTile(
-            icon: Icons.code,
-            title: 'Github',
-            subtitle: 'bootdey',
           ),
           Divider(height: 1),
           _buildSocialLinkTile(
@@ -317,5 +332,202 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         ],
       ),
     );
+  }
+}
+
+class OnlineInterpretationDialog extends StatefulWidget {
+  final String interpreterId;
+
+  const OnlineInterpretationDialog({
+    Key? key, 
+    required this.interpreterId
+  }) : super(key: key);
+
+  @override
+  _OnlineInterpretationDialogState createState() => _OnlineInterpretationDialogState();
+}
+
+class _OnlineInterpretationDialogState extends State<OnlineInterpretationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  
+  // Form controllers
+  final TextEditingController _eventNameController = TextEditingController();
+  final TextEditingController _eventDateController = TextEditingController();
+  final TextEditingController _eventTimeController = TextEditingController();
+  final TextEditingController _durationController = TextEditingController();
+  
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2025),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() { 
+        _selectedDate = picked;
+        _eventDateController.text = "${picked.day}/${picked.month}/${picked.year}";
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null && picked != _selectedTime) {
+      setState(() {
+        _selectedTime = picked;
+        _eventTimeController.text = picked.format(context);
+      });
+    }
+  }
+
+void _submitOnlineInterpretationBooking() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        // Get current user (the one booking the interpretation)
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Please log in to book an interpretation')),
+          );
+          return;
+        }
+
+        // Create booking record in Firestore
+        await FirebaseFirestore.instance.collection('online_interpretations').add({
+          'interpreterId': widget.interpreterId,
+          'userId': currentUser.uid, // Add user ID
+          'eventName': _eventNameController.text,
+          'eventDate': _selectedDate,
+          'eventTime': _selectedTime?.format(context),
+          'duration': _durationController.text,
+          'bookingDate': DateTime.now(),
+          'status': 'Pending'
+        });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Online Interpretation Booking Submitted Successfully')),
+        );
+
+        // Close the dialog
+        Navigator.of(context).pop();
+      } catch (e) {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error submitting booking: $e')),
+        );
+      }
+    }
+  }
+  
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Book Online Interpretation'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _eventNameController,
+                decoration: InputDecoration(
+                  labelText: 'Event Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter event name';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 10),
+              TextFormField(
+                controller: _eventDateController,
+                decoration: InputDecoration(
+                  labelText: 'Event Date',
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.calendar_today),
+                    onPressed: () => _selectDate(context),
+                  ),
+                ),
+                readOnly: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select event date';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 10),
+              TextFormField(
+                controller: _eventTimeController,
+                decoration: InputDecoration(
+                  labelText: 'Event Time',
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.access_time),
+                    onPressed: () => _selectTime(context),
+                  ),
+                ),
+                readOnly: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select event time';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 10),
+              TextFormField(
+                controller: _durationController,
+                decoration: InputDecoration(
+                  labelText: 'Duration (minutes)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter duration';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _submitOnlineInterpretationBooking,
+          child: Text('Book Interpretation'),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    // Clean up controllers
+    _eventNameController.dispose();
+    _eventDateController.dispose();
+    _eventTimeController.dispose();
+    _durationController.dispose();
+    super.dispose();
   }
 }
