@@ -12,6 +12,9 @@ class NotificationDialog extends StatefulWidget {
 }
 
 class _NotificationDialogState extends State<NotificationDialog> {
+
+
+  
   List<dynamic> _notifications = [];
   bool _isLoading = true;
 

@@ -3,13 +3,13 @@ import 'package:deafassist/const/app_colors.dart';
 import 'package:deafassist/modals/category.dart';
 import 'package:deafassist/services/auth_service.dart';
 import 'package:deafassist/views/screens/deaf/comm.dart';
+import 'package:deafassist/views/screens/deaf/notification.dart';
 import 'package:deafassist/views/screens/deaf/resource_main.dart';
 import 'package:deafassist/views/screens/deaf/upcoming_events.dart';
 import 'package:deafassist/views/screens/deaf/view_interpreters.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'dart:async';
 
 class HomeDeaf extends StatefulWidget {
@@ -21,37 +21,6 @@ class HomeDeaf extends StatefulWidget {
 
 class _HomeDeafState extends State<HomeDeaf> {
   bool showUpdates = true;
-  int unreadNotifications = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUnreadNotificationsCount();
-  }
-
-  Future<void> _fetchUnreadNotificationsCount() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
-
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('user_notifications')
-          .where('userId', isEqualTo: currentUser.uid)
-          .get();
-
-      // Count notifications where read is explicitly false or not set
-      int unreadCount = querySnapshot.docs.where((doc) {
-        final data = doc.data();
-        return data['read'] != true; // Consider notification unread if read isn't explicitly true
-      }).length;
-
-      setState(() {
-        unreadNotifications = unreadCount;
-      });
-    } catch (e) {
-      print('Error fetching unread notifications count: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,23 +34,13 @@ class _HomeDeafState extends State<HomeDeaf> {
               CustomAppBar(),
               TabSelector(
                 showUpdates: showUpdates,
-                unreadCount: unreadNotifications,
                 onTabChanged: (bool isUpdates) {
                   setState(() {
                     showUpdates = isUpdates;
-                    if (!isUpdates) {
-                      unreadNotifications = 0;
-                    }
                   });
                 },
               ),
-              showUpdates ? const UpdatesBody() : NotificationsBody(
-                onNotificationsRead: () {
-                  setState(() {
-                    unreadNotifications = 0;
-                  });
-                },
-              ),
+              showUpdates ? const UpdatesBody() : const NotificationsBody(),
             ],
           ),
         ),
@@ -92,13 +51,11 @@ class _HomeDeafState extends State<HomeDeaf> {
 
 class TabSelector extends StatelessWidget {
   final bool showUpdates;
-  final int unreadCount;
   final Function(bool) onTabChanged;
 
   const TabSelector({
     super.key,
     required this.showUpdates,
-    required this.unreadCount,
     required this.onTabChanged,
   });
 
@@ -137,7 +94,7 @@ class TabSelector extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: 40),
+          SizedBox(width: 40,),
           Expanded(
             child: GestureDetector(
               onTap: () => onTabChanged(false),
@@ -152,38 +109,27 @@ class TabSelector extends StatelessWidget {
                   ),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       "Notifications",
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: fontSize,
                         fontWeight: !showUpdates ? FontWeight.bold : FontWeight.normal,
                         color: !showUpdates ? AppColors.primaryColor : Colors.grey,
                       ),
                     ),
-                    if (unreadCount > 0) ...[
-                      SizedBox(width: 5),
-                      Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: BoxConstraints(
-                          minWidth: 20,
-                          minHeight: 20,
-                        ),
-                        child: Text(
-                          unreadCount.toString(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                    SizedBox(width: 5,),
+                    Container(
+                      height: 15,
+                      width: 15,
+                      // color: Colors.red,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.red
                       ),
-                    ],
+                      child: Text("3", style: TextStyle(color: Colors.white),),
+                    )
                   ],
                 ),
               ),
@@ -195,202 +141,27 @@ class TabSelector extends StatelessWidget {
   }
 }
 
-class NotificationsBody extends StatefulWidget {
-  final VoidCallback onNotificationsRead;
-
-  const NotificationsBody({
-    Key? key,
-    required this.onNotificationsRead,
-  }) : super(key: key);
-
-  @override
-  _NotificationsBodyState createState() => _NotificationsBodyState();
-}
-
-class _NotificationsBodyState extends State<NotificationsBody> {
-  List<Map<String, dynamic>> _notifications = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchNotifications();
-  }
-
-  Future<void> _fetchNotifications() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
-
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('user_notifications')
-          .where('userId', isEqualTo: currentUser.uid)
-          .orderBy('timestamp', descending: true)
-          .get();
-
-      setState(() {
-        _notifications = querySnapshot.docs.map((doc) {
-          Map<String, dynamic> data = doc.data();
-          return {
-            'id': doc.id,
-            'read': data['read'] ?? false, // Provide default value for read
-            'title': data['title'] ?? 'Notification',
-            'message': data['message'] ?? '',
-            'timestamp': data['timestamp'] ?? Timestamp.now(),
-            'userId': data['userId'] ?? '',
-          };
-        }).toList();
-        _isLoading = false;
-      });
-
-      // Mark notifications as read
-      await _markNotificationsAsRead(querySnapshot.docs);
-      widget.onNotificationsRead();
-    } catch (e) {
-      print('Error in _fetchNotifications: $e');
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading notifications: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _markNotificationsAsRead(List<QueryDocumentSnapshot> docs) async {
-    try {
-      final batch = FirebaseFirestore.instance.batch();
-      
-      for (var doc in docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        // Only update if not already read
-        if (data['read'] != true) {
-          batch.update(doc.reference, {'read': true});
-        }
-      }
-
-      await batch.commit();
-    } catch (e) {
-      print('Error in _markNotificationsAsRead: $e');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (_notifications.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Text(
-            'No notifications',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: _notifications.length,
-      separatorBuilder: (context, index) => Divider(
-        height: 1,
-        color: Colors.grey.shade300,
-        indent: 16,
-        endIndent: 16,
-      ),
-      itemBuilder: (context, index) {
-        final notification = _notifications[index];
-        final isDeclined = notification['message']?.toString().contains('declined') ?? false;
-
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
-          title: Text(
-            notification['title'] ?? 'Notification',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                notification['message'] ?? '',
-                style: TextStyle(
-                  color: isDeclined ? Colors.red : Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                DateFormat('MMM d, HH:mm').format(
-                  (notification['timestamp'] as Timestamp).toDate(),
-                ),
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          trailing: isDeclined
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('😢', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('😊', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ),
-        );
-      },
-    );
-  }
-}
-
-
 class UpdatesBody extends StatelessWidget {
   const UpdatesBody({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const Body();
+  }
+}
+
+class NotificationsBody extends StatelessWidget {
+  const NotificationsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(20.0),
+      child: Text(
+        "Notifications",
+        style: TextStyle(fontSize: 18),
+      ),
+    );
   }
 }
 

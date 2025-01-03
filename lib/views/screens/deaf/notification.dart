@@ -43,25 +43,29 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
 
       // Mark all notifications as read
-      _markNotificationsAsRead(querySnapshot.docs);
+      await _markNotificationsAsRead(querySnapshot.docs);
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading notifications: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading notifications: $e')),
+        );
+      }
     }
   }
 
-  Future<void> _markNotificationsAsRead(
-      List<QueryDocumentSnapshot> docs) async {
+  Future<void> _markNotificationsAsRead(List<QueryDocumentSnapshot> docs) async {
+    final batch = FirebaseFirestore.instance.batch();
+    
     for (var doc in docs) {
-      await FirebaseFirestore.instance
-          .collection('user_notifications')
-          .doc(doc.id)
-          .update({'read': true});
+      if (!(doc.data() as Map<String, dynamic>)['read'] ?? false) {
+        batch.update(doc.reference, {'read': true});
+      }
     }
+
+    await batch.commit();
   }
 
   @override
@@ -93,7 +97,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final notification = _notifications[index];
-                    // Check if this is a declined booking notification
                     final isDeclined =
                         notification['message']?.contains('declined') ?? false;
 
@@ -134,12 +137,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ? Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text('😢', style: TextStyle(fontSize: 20)),
-                                SizedBox(width: 4),
+                                const Text('😢', style: TextStyle(fontSize: 20)),
+                                const SizedBox(width: 4),
                                 Container(
                                   width: 10,
                                   height: 10,
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: Colors.red,
                                     shape: BoxShape.circle,
                                   ),
