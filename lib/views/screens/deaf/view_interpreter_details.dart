@@ -360,12 +360,17 @@ class _OnlineInterpretationDialogState extends State<OnlineInterpretationDialog>
   TimeOfDay? _selectedTime;
 
   Future<void> _selectDate(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime firstDate = now;
+    final DateTime lastDate = DateTime(now.year + 2); // Allow bookings up to 2 years in advance
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2025),
+      initialDate: _selectedDate ?? now,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
+    
     if (picked != null && picked != _selectedDate) {
       setState(() { 
         _selectedDate = picked;
@@ -387,7 +392,7 @@ class _OnlineInterpretationDialogState extends State<OnlineInterpretationDialog>
     }
   }
 
-void _submitOnlineInterpretationBooking() async {
+  void _submitOnlineInterpretationBooking() async {
     if (_formKey.currentState!.validate()) {
       try {
         // Get current user (the one booking the interpretation)
@@ -402,7 +407,7 @@ void _submitOnlineInterpretationBooking() async {
         // Create booking record in Firestore
         await FirebaseFirestore.instance.collection('online_interpretations').add({
           'interpreterId': widget.interpreterId,
-          'userId': currentUser.uid, // Add user ID
+          'userId': currentUser.uid,
           'eventName': _eventNameController.text,
           'eventDate': _selectedDate,
           'eventTime': _selectedTime?.format(context),
@@ -411,22 +416,18 @@ void _submitOnlineInterpretationBooking() async {
           'status': 'Pending'
         });
 
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Online Interpretation Booking Submitted Successfully')),
         );
 
-        // Close the dialog
         Navigator.of(context).pop();
       } catch (e) {
-        // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error submitting booking: $e')),
         );
       }
     }
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -501,6 +502,9 @@ void _submitOnlineInterpretationBooking() async {
                   if (value == null || value.isEmpty) {
                     return 'Please enter duration';
                   }
+                  if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                    return 'Please enter a valid duration';
+                  }
                   return null;
                 },
               ),
@@ -523,7 +527,6 @@ void _submitOnlineInterpretationBooking() async {
 
   @override
   void dispose() {
-    // Clean up controllers
     _eventNameController.dispose();
     _eventDateController.dispose();
     _eventTimeController.dispose();

@@ -1,16 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:deafassist/const/app_colors.dart';
-import 'package:deafassist/modals/category.dart';
-import 'package:deafassist/services/auth_service.dart';
-import 'package:deafassist/views/screens/deaf/comm.dart';
-import 'package:deafassist/views/screens/deaf/resource_main.dart';
-import 'package:deafassist/views/screens/deaf/upcoming_events.dart';
-import 'package:deafassist/views/screens/deaf/view_interpreters.dart';
+import 'package:deafassist/views/screens/deaf/copy.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'dart:async';
 
 class HomeDeaf extends StatefulWidget {
   const HomeDeaf({super.key});
@@ -22,11 +15,58 @@ class HomeDeaf extends StatefulWidget {
 class _HomeDeafState extends State<HomeDeaf> {
   bool showUpdates = true;
   int unreadNotifications = 0;
+  late Stream<QuerySnapshot> _notificationsStream;
 
   @override
   void initState() {
     super.initState();
+    _initializeNotifications();
     _fetchUnreadNotificationsCount();
+    _listenToNewNotifications();
+  }
+
+  void _initializeNotifications() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _notificationsStream = FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: user.uid)
+          .where('isRead', isEqualTo: false)
+          .snapshots();
+    }
+  }
+
+  void _listenToNewNotifications() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Listen to interpreter bookings
+      FirebaseFirestore.instance
+          .collection('interpreter_bookings')
+          .where('userId', isEqualTo: user.uid)
+          .where('read', isEqualTo: false)
+          .snapshots()
+          .listen((snapshot) {
+        _updateNotificationCount(snapshot.docs.length);
+      });
+
+      // Listen to online interpretations
+      FirebaseFirestore.instance
+          .collection('online_interpretations')
+          .where('userId', isEqualTo: user.uid)
+          .where('read', isEqualTo: false)
+          .snapshots()
+          .listen((snapshot) {
+        _updateNotificationCount(snapshot.docs.length);
+      });
+    }
+  }
+
+  void incrementNotificationCount() {
+    if (mounted) {
+      setState(() {
+        unreadNotifications++;
+      });
+    }
   }
 
   Future<void> _fetchUnreadNotificationsCount() async {
@@ -34,22 +74,72 @@ class _HomeDeafState extends State<HomeDeaf> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('user_notifications')
-          .where('userId', isEqualTo: currentUser.uid)
+      // Get reference to the user's notification counter
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
           .get();
 
-      // Count notifications where read is explicitly false or not set
-      int unreadCount = querySnapshot.docs.where((doc) {
-        final data = doc.data();
-        return data['read'] != true; // Consider notification unread if read isn't explicitly true
-      }).length;
-
-      setState(() {
-        unreadNotifications = unreadCount;
-      });
+      if (userDoc.exists) {
+        setState(() {
+          unreadNotifications = userDoc.data()?['unreadNotifications'] ?? 0;
+        });
+      }
     } catch (e) {
       print('Error fetching unread notifications count: $e');
+    }
+  }
+
+  void _showNotification(String title, String message) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            Text(message, style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        duration: Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.blue.shade900,
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updateNotificationCount(int newCount) async {
+    if (!mounted) return;
+    
+    setState(() {
+      // Only update if we're on the Updates tab
+      if (showUpdates) {
+        unreadNotifications = newCount;
+      }
+    });
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .set({
+          'unreadNotifications': newCount,
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      print('Error updating notification count: $e');
     }
   }
 
@@ -59,31 +149,61 @@ class _HomeDeafState extends State<HomeDeaf> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              CustomAppBar(),
-              TabSelector(
-                showUpdates: showUpdates,
-                unreadCount: unreadNotifications,
-                onTabChanged: (bool isUpdates) {
-                  setState(() {
-                    showUpdates = isUpdates;
-                    if (!isUpdates) {
-                      unreadNotifications = 0;
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  CustomAppBar(),
+                  TabSelector(
+                    showUpdates: showUpdates,
+                    unreadCount: showUpdates ? unreadNotifications : 0,
+                    onTabChanged: (bool isUpdates) {
+                      setState(() {
+                        showUpdates = isUpdates;
+                        if (!isUpdates) {
+                          // Reset notification count when switching to notifications tab
+                          unreadNotifications = 0;
+                          _updateNotificationCount(0);
+                        } else {
+                          // Refresh count when switching back to updates tab
+                          _fetchUnreadNotificationsCount();
+                        }
+                      });
+                    },
+                  ),
+                  showUpdates 
+                    ? const UpdatesBody() 
+                    : NotificationsBody(
+                        onNotificationsRead: () {
+                          setState(() {
+                            unreadNotifications = 0;
+                          });
+                          // Update the count in Firestore
+                          _updateNotificationCount(0);
+                        },
+                      ),
+                ],
+              ),
+            ),
+            StreamBuilder<QuerySnapshot>(
+              stream: _notificationsStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final notifications = snapshot.data!.docs;
+                    for (var doc in notifications) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      _showNotification(data['title'], data['message']);
+                      // Mark notification as read
+                      doc.reference.update({'isRead': true});
                     }
                   });
-                },
-              ),
-              showUpdates ? const UpdatesBody() : NotificationsBody(
-                onNotificationsRead: () {
-                  setState(() {
-                    unreadNotifications = 0;
-                  });
-                },
-              ),
-            ],
-          ),
+                }
+                return SizedBox.shrink();
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -104,92 +224,90 @@ class TabSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double fontSize = screenWidth * 0.04;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            child: GestureDetector(
+            child: _TabButton(
+              title: "Updates",
+              isSelected: showUpdates,
               onTap: () => onTabChanged(true),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: showUpdates ? AppColors.primaryColor : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                child: Text(
-                  "Updates",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: showUpdates ? FontWeight.bold : FontWeight.normal,
-                    color: showUpdates ? AppColors.primaryColor : Colors.grey,
-                  ),
-                ),
-              ),
             ),
           ),
-          SizedBox(width: 40),
+          SizedBox(width: 20),
           Expanded(
-            child: GestureDetector(
+            child: _TabButton(
+              title: "Notifications",
+              isSelected: !showUpdates,
+              unreadCount: unreadCount,
               onTap: () => onTabChanged(false),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: !showUpdates ? AppColors.primaryColor : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Notifications",
-                      style: TextStyle(
-                        fontSize: fontSize,
-                        fontWeight: !showUpdates ? FontWeight.bold : FontWeight.normal,
-                        color: !showUpdates ? AppColors.primaryColor : Colors.grey,
-                      ),
-                    ),
-                    if (unreadCount > 0) ...[
-                      SizedBox(width: 5),
-                      Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: BoxConstraints(
-                          minWidth: 20,
-                          minHeight: 20,
-                        ),
-                        child: Text(
-                          unreadCount.toString(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  final String title;
+  final bool isSelected;
+  final int? unreadCount;
+  final VoidCallback onTap;
+
+  const _TabButton({
+    required this.title,
+    required this.isSelected,
+    this.unreadCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? Colors.blue : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.blue : Colors.grey,
+              ),
+            ),
+            if (unreadCount != null && unreadCount! > 0) ...[
+              SizedBox(width: 8),
+              Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  unreadCount.toString(),
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -222,29 +340,64 @@ class _NotificationsBodyState extends State<NotificationsBody> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('user_notifications')
+      final batch = FirebaseFirestore.instance.batch();
+
+      // Fetch and mark bookings as read
+      final bookingsQuery = await FirebaseFirestore.instance
+          .collection('interpreter_bookings')
           .where('userId', isEqualTo: currentUser.uid)
-          .orderBy('timestamp', descending: true)
           .get();
 
+      List<Map<String, dynamic>> bookingNotifications = bookingsQuery.docs.map((doc) {
+        Map<String, dynamic> data = doc.data();
+        bool isPending = data['status'] == 'pending';
+        if (isPending) {
+          batch.update(doc.reference, {'read': true});
+        }
+        
+        return {
+          'id': doc.id,
+          'type': 'booking',
+          'title': 'Interpreter Booking ${_getStatusText(data['status'])}',
+          'message': 'Booking for ${DateFormat('MMMM d, yyyy').format((data['bookingDate'] as Timestamp).toDate())}',
+          'timestamp': data['timestamp'] ?? Timestamp.now(),
+          'status': data['status'],
+        };
+      }).toList();
+
+      // Fetch and mark online interpretations as read
+      final onlineInterpretationsQuery = await FirebaseFirestore.instance
+          .collection('online_interpretations')
+          .where('userId', isEqualTo: currentUser.uid)
+          .get();
+
+      List<Map<String, dynamic>> onlineNotifications = onlineInterpretationsQuery.docs.map((doc) {
+        Map<String, dynamic> data = doc.data();
+        bool isPending = data['status'] == 'Pending';
+        if (isPending) {
+          batch.update(doc.reference, {'read': true});
+        }
+
+        return {
+          'id': doc.id,
+          'type': 'online_interpretation',
+          'title': 'Online Interpretation ${_getStatusText(data['status'])}',
+          'message': 'Session for ${data['eventName']} on ${DateFormat('MMMM d, yyyy').format((data['eventDate'] as Timestamp).toDate())}',
+          'timestamp': data['bookingDate'] ?? Timestamp.now(),
+          'status': data['status'],
+        };
+      }).toList();
+
+      await batch.commit();
+
+      List<Map<String, dynamic>> allNotifications = [...bookingNotifications, ...onlineNotifications];
+      allNotifications.sort((a, b) => (b['timestamp'] as Timestamp).compareTo(a['timestamp'] as Timestamp));
+
       setState(() {
-        _notifications = querySnapshot.docs.map((doc) {
-          Map<String, dynamic> data = doc.data();
-          return {
-            'id': doc.id,
-            'read': data['read'] ?? false, // Provide default value for read
-            'title': data['title'] ?? 'Notification',
-            'message': data['message'] ?? '',
-            'timestamp': data['timestamp'] ?? Timestamp.now(),
-            'userId': data['userId'] ?? '',
-          };
-        }).toList();
+        _notifications = allNotifications;
         _isLoading = false;
       });
 
-      // Mark notifications as read
-      await _markNotificationsAsRead(querySnapshot.docs);
       widget.onNotificationsRead();
     } catch (e) {
       print('Error in _fetchNotifications: $e');
@@ -253,27 +406,35 @@ class _NotificationsBodyState extends State<NotificationsBody> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading notifications: $e')),
+          SnackBar(content: Text('Error loading notifications')),
         );
       }
     }
   }
 
-  Future<void> _markNotificationsAsRead(List<QueryDocumentSnapshot> docs) async {
-    try {
-      final batch = FirebaseFirestore.instance.batch();
-      
-      for (var doc in docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        // Only update if not already read
-        if (data['read'] != true) {
-          batch.update(doc.reference, {'read': true});
-        }
-      }
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pending';
+      case 'confirmed':
+        return 'Confirmed';
+      case 'declined':
+        return 'Declined';
+      default:
+        return 'Updated';
+    }
+  }
 
-      await batch.commit();
-    } catch (e) {
-      print('Error in _markNotificationsAsRead: $e');
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'confirmed':
+        return Colors.green;
+      case 'declined':
+        return Colors.red;
+      default:
+        return Colors.blue;
     }
   }
 
@@ -307,37 +468,59 @@ class _NotificationsBodyState extends State<NotificationsBody> {
       separatorBuilder: (context, index) => Divider(
         height: 1,
         color: Colors.grey.shade300,
-        indent: 16,
-        endIndent: 16,
       ),
       itemBuilder: (context, index) {
         final notification = _notifications[index];
-        final isDeclined = notification['message']?.toString().contains('declined') ?? false;
-
+        final status = notification['status'].toString().toLowerCase();
+        
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
-          title: Text(
-            notification['title'] ?? 'Notification',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  notification['title'],
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(status).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _getStatusColor(status),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  _getStatusText(status),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _getStatusColor(status),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(height: 4),
               Text(
-                notification['message'] ?? '',
+                notification['message'],
                 style: TextStyle(
-                  color: isDeclined ? Colors.red : Colors.grey.shade600,
+                  color: Colors.grey.shade700,
+                  fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
-                DateFormat('MMM d, HH:mm').format(
+                DateFormat('MMM d, yyyy HH:mm').format(
                   (notification['timestamp'] as Timestamp).toDate(),
                 ),
                 style: TextStyle(
@@ -347,509 +530,8 @@ class _NotificationsBodyState extends State<NotificationsBody> {
               ),
             ],
           ),
-          trailing: isDeclined
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('😢', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('😊', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ),
         );
       },
-    );
-  }
-}
-
-
-class UpdatesBody extends StatelessWidget {
-  const UpdatesBody({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Body();
-  }
-}
-
-class Body extends StatelessWidget {
-  const Body({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    List<Category> categoryList = [
-      Category(
-        name: 'Interpreters',
-        thumbnail: 'assets/images/gath.png',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ViewInterpreters(),
-            ),
-          );
-        },
-      ),
-      Category(
-        name: 'Resources',
-        thumbnail: 'assets/images/res.png',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const Resources(),
-            ),
-          );
-        },
-      ),
-      Category(
-        name: 'Community Support',
-        thumbnail: 'assets/images/group.png',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MainHome(),
-            ),
-          );
-        },
-      ),
-      Category(
-        name: 'Events',
-        thumbnail: 'assets/images/event.png',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const UpcomingEvents(),
-            ),
-          );
-        },
-      ),
-    ];
-
-    double screenWidth = MediaQuery.of(context).size.width;
-    double fontSize = screenWidth * 0.04;
-
-    return Column(
-      children: [
-        const HorizontalImageScroll(imageUrls: [
-          'assets/images/new.png',
-          'assets/images/newpdf.png',
-          'assets/images/okumu.png',
-          'assets/images/new.png',
-        ]),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              "Our Services",
-              textAlign: TextAlign.start,
-              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-        GridView.builder(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 8,
-          ),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.2,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 24,
-          ),
-          itemBuilder: (context, index) {
-            return CategoryCard(
-              category: categoryList[index],
-            );
-          },
-          itemCount: categoryList.length,
-        ),
-      ],
-    );
-  }
-}
-
-class CategoryCard extends StatelessWidget {
-  final Category category;
-  const CategoryCard({
-    super.key,
-    required this.category,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-    double fontSize = screenWidth * 0.03;
-
-    final double imageHeight = screenHeight * 0.15;
-    final double imageWidth = screenWidth * 0.35;
-
-    return GestureDetector(
-      onTap: () => category.onTap(),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(.1),
-              blurRadius: 4.0,
-              spreadRadius: .05,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 8),
-            Flexible(
-              child: Center(
-                child: Image.asset(
-                  category.thumbnail,
-                  height: imageHeight,
-                  width: imageWidth,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.center,
-                child: Text(
-                  category.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: fontSize,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class CustomAppBar extends StatefulWidget {
-  const CustomAppBar({super.key});
-
-  @override
-  _CustomAppBarState createState() => _CustomAppBarState();
-}
-
-class _CustomAppBarState extends State<CustomAppBar> {
-  final AuthService _authService = AuthService();
-  String _userName = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUserName();
-  }
-
-  Future<void> _fetchUserName() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
-
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-
-      if (userDoc.exists) {
-        setState(() {
-          _userName = userDoc.data()?['name'] ?? '';
-        });
-      }
-    } catch (e) {
-      print('Error fetching user name: $e');
-    }
-  }
-
-  String getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return "Good Morning";
-    } else if (hour < 17) {
-      return "Good Afternoon";
-    } else {
-      return "Good Evening";
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double fontSize = screenWidth * 0.05;
-    double fontSize1 = screenWidth * 0.07;
-
-    return Container(
-      height: 250,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
-              width: double.infinity,
-              color: AppColors.primaryColor,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        getGreeting(),
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        _userName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: fontSize1,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    spreadRadius: 2,
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ViewInterpreters(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    minimumSize: Size(
-                      MediaQuery.of(context).size.width * 0.9,
-                      40,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 15,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    "Book an Interpreter",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class HorizontalImageScroll extends StatefulWidget {
-  final List<String> imageUrls;
-
-  const HorizontalImageScroll({super.key, required this.imageUrls});
-
-  @override
-  _HorizontalImageScrollState createState() => _HorizontalImageScrollState();
-}
-
-class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
-  late PageController _pageController;
-  late Timer _timer;
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.8);
-
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      _currentPage++;
-      if (_currentPage >= widget.imageUrls.length) {
-        _currentPage = 0;
-      }
-      _pageController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double fontSize = screenWidth * 0.05;
-    double fontSize1 = screenWidth * 0.03;
-    return SizedBox(
-      height: MediaQuery.of(context).size.width * 0.35,
-      child: PageView.builder(
-        controller: _pageController,
-        itemCount: widget.imageUrls.length * 100,
-        itemBuilder: (context, index) {
-          int actualIndex = index % widget.imageUrls.length;
-          return Stack(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.5),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    ),
-                  borderRadius: BorderRadius.circular(15),
-                  image: DecorationImage(
-                    image: AssetImage(widget.imageUrls[actualIndex]),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.7),
-                      Colors.black.withOpacity(0.2),
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 14, top: 5),
-                child: Text(
-                  "Sign Talk",
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 14, top: 40, right: 10),
-                child: Text(
-                  "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. ",
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: fontSize1,
-                    color: Colors.white,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 14, top: 100),
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Button action goes here
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    "Read More",
-                    style: TextStyle(
-                      fontSize: fontSize1,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 }

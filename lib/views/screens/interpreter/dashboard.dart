@@ -21,7 +21,6 @@ class HomeInterpreter extends StatefulWidget {
 }
 
 class _HomeInterpreterState extends State<HomeInterpreter> {
-  // Initialize your AuthService
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -79,14 +78,12 @@ class Body extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 20, vertical: 20), // Add some horizontal padding
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Align(
-            alignment: Alignment.centerLeft, // Align text to the left
+            alignment: Alignment.centerLeft,
             child: Text(
               "Updates",
-              textAlign: TextAlign
-                  .start, // This ensures left alignment within its space
+              textAlign: TextAlign.start,
               style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
             ),
           ),
@@ -98,14 +95,12 @@ class Body extends StatelessWidget {
           'assets/images/new.png',
         ]),
         Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 20, vertical: 20), // Add some horizontal padding
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Align(
-            alignment: Alignment.centerLeft, // Align text to the left
+            alignment: Alignment.centerLeft,
             child: Text(
               "Our Services",
-              textAlign: TextAlign
-                  .start, // This ensures left alignment within its space
+              textAlign: TextAlign.start,
               style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
             ),
           ),
@@ -205,15 +200,16 @@ class CustomAppBar extends StatefulWidget {
 }
 
 class _CustomAppBarState extends State<CustomAppBar> {
-  int _pendingBookingsCount = 0;
-  StreamSubscription? _bookingsSubscription;
-  String _userName = ''; // Add this variable to store the user's name
+  int _totalPendingBookings = 0;
+  StreamSubscription? _physicalBookingsSubscription;
+  StreamSubscription? _onlineBookingsSubscription;
+  String _userName = '';
 
   @override
   void initState() {
     super.initState();
-    _setupBookingNotificationListener();
-    _fetchUserName(); // Call this method to get the user's name
+    _setupBookingNotificationListeners();
+    _fetchUserName();
   }
 
   Future<void> _fetchUserName() async {
@@ -221,7 +217,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      // Fetch user document from Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser.uid)
@@ -229,7 +224,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
       if (userDoc.exists) {
         setState(() {
-          _userName = userDoc.data()?['name'] ?? ''; // Adjust the field name as needed
+          _userName = userDoc.data()?['name'] ?? '';
         });
       }
     } catch (e) {
@@ -237,25 +232,62 @@ class _CustomAppBarState extends State<CustomAppBar> {
     }
   }
 
-  void _setupBookingNotificationListener() {
+  void _setupBookingNotificationListeners() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    _bookingsSubscription = FirebaseFirestore.instance
+    // Listen to physical bookings
+    _physicalBookingsSubscription = FirebaseFirestore.instance
         .collection('interpreter_bookings')
         .where('interpreterId', isEqualTo: currentUser.uid)
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .listen((snapshot) {
-      setState(() {
-        _pendingBookingsCount = snapshot.docs.length;
-      });
+      _updateTotalBookings();
     });
+
+    // Listen to online bookings
+    _onlineBookingsSubscription = FirebaseFirestore.instance
+        .collection('online_interpretations')
+        .where('interpreterId', isEqualTo: currentUser.uid)
+        .where('status', isEqualTo: 'Pending')
+        .snapshots()
+        .listen((snapshot) {
+      _updateTotalBookings();
+    });
+  }
+
+  Future<void> _updateTotalBookings() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Get physical bookings count
+      final physicalBookings = await FirebaseFirestore.instance
+          .collection('interpreter_bookings')
+          .where('interpreterId', isEqualTo: currentUser.uid)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      // Get online bookings count
+      final onlineBookings = await FirebaseFirestore.instance
+          .collection('online_interpretations')
+          .where('interpreterId', isEqualTo: currentUser.uid)
+          .where('status', isEqualTo: 'Pending')
+          .get();
+
+      setState(() {
+        _totalPendingBookings = physicalBookings.docs.length + onlineBookings.docs.length;
+      });
+    } catch (e) {
+      print('Error updating total bookings: $e');
+    }
   }
 
   @override
   void dispose() {
-    _bookingsSubscription?.cancel();
+    _physicalBookingsSubscription?.cancel();
+    _onlineBookingsSubscription?.cancel();
     super.dispose();
   }
 
@@ -287,7 +319,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
       ),
       child: Column(
         children: [
-          // Upper part with primary color
           Expanded(
             child: Container(
               padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
@@ -307,7 +338,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                             color: Colors.white),
                       ),
                       Text(
-                        "$_userName", // Dynamically display user name
+                        _userName,
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: fontSize1,
@@ -315,7 +346,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
                       ),
                     ],
                   ),
-                  // Notification Icon with Badge
                   Stack(
                     children: [
                       IconButton(
@@ -327,7 +357,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                           );
                         },
                       ),
-                      if (_pendingBookingsCount > 0)
+                      if (_totalPendingBookings > 0)
                         Positioned(
                           right: 0,
                           top: 0,
@@ -338,7 +368,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                               shape: BoxShape.circle,
                             ),
                             child: Text(
-                              '$_pendingBookingsCount',
+                              '$_totalPendingBookings',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
@@ -352,7 +382,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ),
             ),
           ),
-          // Lower part with Schedule Availability button
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -404,8 +433,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
     );
   }
 }
+
 class HorizontalImageScroll extends StatefulWidget {
-  final List<String> imageUrls; // List of image URLs or asset paths
+  final List<String> imageUrls;
 
   const HorizontalImageScroll({super.key, required this.imageUrls});
 
@@ -423,11 +453,10 @@ class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
     super.initState();
     _pageController = PageController(viewportFraction: 0.8);
 
-    // Timer to automatically scroll every 3 seconds
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       _currentPage++;
       if (_currentPage >= widget.imageUrls.length) {
-        _currentPage = 0; // Reset to first page
+        _currentPage = 0;
       }
       _pageController.animateToPage(
         _currentPage,
@@ -440,7 +469,7 @@ class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
   @override
   void dispose() {
     _pageController.dispose();
-    _timer.cancel(); // Cancel the timer when the widget is disposed
+    _timer.cancel();
     super.dispose();
   }
 
@@ -450,47 +479,40 @@ class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
     double fontSize = screenWidth * 0.05;
     double fontSize1 = screenWidth * 0.03;
     return SizedBox(
-      height: MediaQuery.of(context).size.width *
-          0.35, // Set the height of the container
+      height: MediaQuery.of(context).size.width * 0.35,
       child: PageView.builder(
         controller: _pageController,
-        itemCount:
-            widget.imageUrls.length * 100, // Large number to simulate looping
+        itemCount: widget.imageUrls.length * 100,
         itemBuilder: (context, index) {
-          // Calculate the actual index from the infinite scroll index
           int actualIndex = index % widget.imageUrls.length;
           return Stack(
-            // Use Stack to layer gradient over image
             children: [
               Container(
-                margin: const EdgeInsets.symmetric(
-                    horizontal: 8), // Reduced horizontal margin
+                margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withOpacity(0.5), // Dark overlay color
-                      Colors.transparent, // Gradually transparent
+                      Colors.black.withOpacity(0.5),
+                      Colors.transparent,
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
                   borderRadius: BorderRadius.circular(15),
                   image: DecorationImage(
-                    image: AssetImage(widget.imageUrls[
-                        actualIndex]), // Use AssetImage for local images
-                    fit: BoxFit.cover, // Cover the entire container
+                    image: AssetImage(widget.imageUrls[actualIndex]),
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-              // Gradient overlay
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withOpacity(0.7), // Dark overlay color
-                      Colors.black.withOpacity(0.2), // Gradually transparent
+                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.2),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
@@ -527,8 +549,7 @@ class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10), // Button size
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -537,7 +558,7 @@ class _HorizontalImageScrollState extends State<HorizontalImageScroll> {
                     "Read More",
                     style: TextStyle(
                       fontSize: fontSize1,
-                      color: Colors.white, // Button text color
+                      color: Colors.white,
                     ),
                   ),
                 ),
