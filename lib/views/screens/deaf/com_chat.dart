@@ -33,7 +33,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.region, style: GoogleFonts.ubuntu()),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white,),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(widget.region, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.primaryColor,
       ),
       body: Column(

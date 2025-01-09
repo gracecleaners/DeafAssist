@@ -96,11 +96,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             // Profile Header Card
             _buildProfileHeaderCard(),
             SizedBox(height: 16),
-
-            // Social Links Card
-            _buildSocialLinksCard(),
-            SizedBox(height: 16),
-
             // Personal Information Card
             _buildPersonalInfoCard(),
             SizedBox(height: 16),
@@ -216,40 +211,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  Widget _buildSocialLinksCard() {
-    return Card(
-      elevation: 1,
-      child: ListView(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        children: [
-          _buildSocialLinkTile(
-            icon: Icons.web,
-            title: 'Website',
-            subtitle: 'https://bootdey.com',
-          ),
-          Divider(height: 1),
-          _buildSocialLinkTile(
-            icon: Icons.alternate_email,
-            title: 'Twitter',
-            subtitle: '@bootdey',
-          ),
-          Divider(height: 1),
-          _buildSocialLinkTile(
-            icon: Icons.photo,
-            title: 'Instagram',
-            subtitle: 'bootdey',
-          ),
-          Divider(height: 1),
-          _buildSocialLinkTile(
-            icon: Icons.facebook,
-            title: 'Facebook',
-            subtitle: 'bootdey',
-          ),
-        ],
-      ),
-    );
-  }
+ 
 
   Widget _buildSocialLinkTile({
     required IconData icon,
